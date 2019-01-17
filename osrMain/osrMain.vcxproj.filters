@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Other">
+      <UniqueIdentifier>{5edc9fe7-4396-4dbd-91e6-6b05ad72a118}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Other\Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Other\Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Other\Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Main classes">
+      <UniqueIdentifier>{a2ac07c2-6c71-4841-888e-a1c9988eae17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImGui">
+      <UniqueIdentifier>{65082e67-5931-4be3-98a6-239bcb07fd57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Discord-RPC">
+      <UniqueIdentifier>{9dc1b64c-ff95-489c-b11f-3da9f1fb0ba5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Other\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Other\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OSRClasses.h">
+      <Filter>Main classes</Filter>
+    </ClInclude>
+    <ClInclude Include="VUMeter.h">
+      <Filter>Main classes</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11Main.h">
+      <Filter>Main classes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imconfig.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imgui.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imgui_impl_dx11.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imgui_impl_dx9.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imgui_impl_win32.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imgui_internal.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imstb_rectpack.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imstb_textedit.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ImGui\imstb_truetype.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="DiscordPart.h">
+      <Filter>Main classes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\discord-presence\src\backoff.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\discord-presence\src\connection.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\discord-presence\src\msg_queue.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\discord-presence\src\rpc_connection.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\discord-presence\src\serialization.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\discord-presence\include\discord_rpc.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\discord-presence\include\discord_register.h">
+      <Filter>Discord-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="DragAndDrop.h">
+      <Filter>Main classes</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Other\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="osrMain.cpp">
+      <Filter>Other\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Other\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OSRMixer.cpp">
+      <Filter>Main classes</Filter>
+    </ClCompile>
+    <ClCompile Include="OSRUI.cpp">
+      <Filter>Main classes</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11RenderMain.cpp">
+      <Filter>Main classes</Filter>
+    </ClCompile>
+    <ClCompile Include="VUMeter.cpp">
+      <Filter>Main classes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\ImGui\imgui.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\ImGui\imgui_demo.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\ImGui\imgui_draw.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\ImGui\imgui_impl_dx11.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\ImGui\imgui_impl_dx9.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\ImGui\imgui_impl_win32.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\ImGui\imgui_widgets.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\discord-presence\src\connection_win.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\discord-presence\src\discord_register_win.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\discord-presence\src\discord_rpc.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\discord-presence\src\dllmain.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\discord-presence\src\rpc_connection.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\discord-presence\src\serialization.cpp">
+      <Filter>Discord-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="DragAndDrop.cpp">
+      <Filter>Main classes</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

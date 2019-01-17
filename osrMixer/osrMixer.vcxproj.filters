@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Other">
+      <UniqueIdentifier>{498d428c-eba0-4470-b51f-a8812664c664}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer">
+      <UniqueIdentifier>{f8c2943c-0617-4aa5-86d8-9288c4191a2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Other\Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Other\Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Other\Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Sound list">
+      <UniqueIdentifier>{17b52a31-0624-4e8d-aca7-93d607b3140c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loop List">
+      <UniqueIdentifier>{e16c4662-ccf5-4822-a3de-880012cdacc1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer\Output">
+      <UniqueIdentifier>{bfb3bf85-1634-4c46-9c7a-e7563a1102c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer\Output\MME">
+      <UniqueIdentifier>{58aaff82-967f-491d-aa0b-7e04f0b0a6b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer\Output\DirectSound">
+      <UniqueIdentifier>{1a60cc3a-188c-4c84-b368-34265fe823ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer\Output\XAudio2">
+      <UniqueIdentifier>{97f01a90-b8bf-4176-9061-87838533e55f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer\Output\WASAPI">
+      <UniqueIdentifier>{d44054e4-f9d0-45e9-b53d-205aaeddf312}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer\Async %28Editor%29">
+      <UniqueIdentifier>{289a0cce-289a-48ee-a3c8-d67bc3d484ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mixer\Multiple %28DAW%29">
+      <UniqueIdentifier>{fd0f2b7e-fdc8-43df-a1e7-7651a8fe528a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Other\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Other\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XAudioMain.h">
+      <Filter>Mixer\Output\XAudio2</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundList.h">
+      <Filter>Sound list</Filter>
+    </ClInclude>
+    <ClInclude Include="IMWASAPI.h">
+      <Filter>Mixer\Output\WASAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectSoundMain.h">
+      <Filter>Mixer\Output\DirectSound</Filter>
+    </ClInclude>
+    <ClInclude Include="LoopList.h">
+      <Filter>Loop List</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncReader.h">
+      <Filter>Loop List</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveOutHeader.h">
+      <Filter>Mixer\Output\MME</Filter>
+    </ClInclude>
+    <ClInclude Include="MixerBase.h">
+      <Filter>Mixer</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncMixer.h">
+      <Filter>Mixer\Async %28Editor%29</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Other\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="osrMixer.cpp">
+      <Filter>Other\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Other\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="XAudio2Kernel.cpp">
+      <Filter>Mixer\Output\XAudio2</Filter>
+    </ClCompile>
+    <ClCompile Include="XAudio2Mixer.cpp">
+      <Filter>Mixer\Output\XAudio2</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundList.cpp">
+      <Filter>Sound list</Filter>
+    </ClCompile>
+    <ClCompile Include="IMWASAPIKernel.cpp">
+      <Filter>Mixer\Output\WASAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectSoundKernel.cpp">
+      <Filter>Mixer\Output\DirectSound</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectSoundMixer.cpp">
+      <Filter>Mixer\Output\DirectSound</Filter>
+    </ClCompile>
+    <ClCompile Include="LoopList.cpp">
+      <Filter>Loop List</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncReader.cpp">
+      <Filter>Loop List</Filter>
+    </ClCompile>
+    <ClCompile Include="WaveOutKernel.cpp">
+      <Filter>Mixer\Output\MME</Filter>
+    </ClCompile>
+    <ClCompile Include="MixerBase.cpp">
+      <Filter>Mixer</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncMixer.cpp">
+      <Filter>Mixer\Async %28Editor%29</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
