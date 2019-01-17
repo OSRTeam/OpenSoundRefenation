@@ -1,5 +1,6 @@
-# Open Sound Refenation
-## Open-Source Windows DAW
+# Open Sound Refenation - Open-Source Windows DAW
+
+![OSR Icon](https://github.com/OSRTeam/OpenSoundRefenation/blob/master/icon.png)
 
 
 ## System requirements
