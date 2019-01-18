@@ -14,24 +14,35 @@
 #include "sndfile.hh"
 #include "OSR.h"
 
-#define BUFFER_SIZE 4096
-
 class DLL_API ISndFileDecoder : public IDecoderInterface
 {
 public:
+	ISndFileDecoder()
+	{
+
+	}
+
+	ISndFileDecoder(SF_INFO fileInfo1, SNDFILE* sndFile1)
+	{
+		fileInfo = fileInfo1;
+		sndFile = sndFile1; 
+	}
+
 	void DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t& OutSize, WAVE_EX& waveFormat, FILE_TYPE& fileType) override;
 	void EncodeFile(const char* OutPath, void* pFile, size_t FileSize, WAVE_EX waveFormat, FILE_TYPE& fileType) override;
 	void GetDecoderString(STRING128& OutString) override;
 
 	void Release() override
 	{
-
+		if (sndFile) { sf_close(sndFile); }
+		delete this;
 	}
 
 	IObject* CloneObject() override
 	{
-		return nullptr;
+		return new ISndFileDecoder(fileInfo, sndFile);
 	}
+
 private:
 	SF_INFO fileInfo;
 	SNDFILE* sndFile;

@@ -13,30 +13,24 @@
 #include <mfidl.h>
 #include <mfplay.h>
 #include <mfreadwrite.h>
-#include "OSR.h"
-#include "KernCPU.h"
+#include "DecoderInterface.h"	
 
-class DLL_API WMFReader
+class DLL_API IMFDecoder : public IDecoderInterface
 {
 public:
-	WMFReader() 
+	IMFDecoder();
+
+	void DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t& OutSize, WAVE_EX& waveFormat, FILE_TYPE& fileType) override;
+	void EncodeFile(const char* OutPath, void* pFile, size_t FileSize, WAVE_EX waveFormat, FILE_TYPE& fileType) override;
+	void GetDecoderString(STRING128& OutString) override;
+
+	void Release() override;
+
+	IObject* CloneObject() override
 	{
-		MFStartup(MF_VERSION);
-		WMFInit(); 
+
 	}
 
-	~WMFReader()
-	{
-		//MFShutdown();
-		_RELEASE(pAttribute);
-	}
-
-	VOID WMFInit();
-	BOOL IsSupportedByMWF(LPCWSTR lpPath, WAVEFORMATEX** waveFormat);
-	VOID LoadFileToMediaBuffer(std::vector<BYTE>& lpData, WAVEFORMATEX** waveFormat);
-	VOID WriteFileFromMediaBufferEx(IMFSourceReader* pSourceReader, HANDLE hFile, std::vector<BYTE>& pData, BYTE** pSecondData, DWORD dwDataSize);
-
-	IMFAttributes* pAttribute;
 	IMFSourceReader* pSourceReader;
 	IMFMediaType* pMediaType;
 	IMFMediaType* pSecondMediaType;

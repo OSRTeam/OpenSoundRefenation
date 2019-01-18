@@ -28,7 +28,7 @@ ISndFileDecoder::DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t&
 		waveFormat.nBlockAlign = (waveFormat.wBitsPerSample * waveFormat.nChannels) / 8;
 		waveFormat.wFormatTag = 3;
 
-		switch (fileInfo.format & 0xFFFF0000)
+		switch (HIWORD(fileInfo.format))
 		{
 			case SF_FORMAT_WAV:
 				fileType = WAV_TYPE;
@@ -76,6 +76,7 @@ ISndFileDecoder::DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t&
 		sf_readf_float(sndFile, (f32*)(pOutFile), fileInfo.frames);
 
 		sf_close(sndFile);
+		sndFile = nullptr;
 	}
 }
 

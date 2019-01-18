@@ -11,6 +11,9 @@
 #pragma once
 #include "OSR.h"
 #include "OSRSystem.h"
+#ifdef WIN32
+#include "ThreadSystem.h"
+#endif
 
 typedef enum
 {
@@ -59,8 +62,8 @@ typedef struct
 {
 	STRING256 szTrackName;
 	IObject* pEffectHost[90];
+	OSRSample* pData;
 	size_t BufferSize;
-	void* pData;
 	f64 WideImaging;			// M = (L + R) / 2		S = (L - R) / 2
 	f32 GainLevel;
 	u32 ChannelRouting;			// LOWORD - Left, HIWORD - Right
@@ -156,8 +159,9 @@ public:
 	virtual OSRCODE play() = 0;
 	virtual OSRCODE stop() = 0;
 
+	ThreadSystem thread;
 	ISoundInterface* pSound;
-	LPVOID pData;
+	OSRSample* pData;
 	AUDIO_HOST HostsInfo[2];		// 0 - Input, 1 - Output
 	TRACK_INFO tracksInfo[256];
 	u32 EffectsNumber;

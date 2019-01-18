@@ -28,6 +28,7 @@ typedef struct
 
 typedef struct
 {
+	FILE_TYPE fType;
 	u32 SampleCount;				// count of all samples in 1 file
 	u32 FileSize;					// file size (includes header information)
 	u64 FileDuration;				// final file duration (include all samples duration)
@@ -303,7 +304,7 @@ public:
 	virtual void Write(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) = 0;
 
 	virtual void GetPathUTF8(OSRHandle& OutHandle, const char*& OutString, size_t& OutStringSize) = 0;
-	virtual bool IsAudio(const char* PathToFile) = 0;
+	virtual FILE_TYPE IsAudio(const char* PathToFile) = 0;
 
 	virtual void OpenHandle(const char* PathToFile, OSRHandle& OutHandle) = 0;
 	virtual void CloseThisHandle(OSRHandle& OutHandle) = 0;
@@ -684,46 +685,86 @@ public:
 		}
 	}
 
-	bool IsAudio(const char* PathToFile) override
+	FILE_TYPE IsAudio(const char* PathToFile) override
 	{
 		return IsFileIsAudioA(PathToFile);
 	}
 
-	bool IsFileIsAudioA(const char* PathToFile)
+	FILE_TYPE IsFileIsAudioA(const char* PathToFile)
 	{
 		int StringSize = 0;
 		int TypeSize = 0;
 		WSTRING_PATH szPath = { 0 };
 		LPCWSTR szTypes[] = { 
-		L"mp3", L"MP3", L"wav", L"WAV", L"flac", L"FLAC", L"aiff", L"AIFF", L"ogg", L"OGG", L"opus", L"OPUS", L"alac", L"ALAC", L"aac", L"AAC", L"m4a", L"M4A" };
+		L"mp3", L"MP3", L"wav", L"WAV", L"flac", L"FLAC", L"aiff", L"AIFF", L"ogg", L"OGG", L"opus", L"OPUS", L"alac", L"ALAC", L"aac", L"AAC", L"m4a", L"M4A", L"raw", L"RAW" };
 
 		if ((StringSize = MultiByteToWideChar(CP_UTF8, 0, PathToFile, strlen(PathToFile), szPath, sizeof(WSTRING_PATH))))
 		{
 			for (size_t i = wcslen(szPath); i > 0; i--)
 			{
 				WCHAR cbSymbol = szPath[i];
-			
+
 				if (cbSymbol == L'.') { break; }
 
 				TypeSize++;
 			}
-		
+
 			if (TypeSize)
 			{
-				for (LPCWSTR CurrentType : szTypes)
+				for (size_t i = 0; i < 20; i++)
 				{
-					if (!wcscmp(CurrentType, (&szPath[0] + StringSize - TypeSize)))
+					LPCWSTR CurrentType = szTypes[i];
+					LPCWSTR FileType = (szPath + wcslen(szPath) - (TypeSize - 1));
+					if (!wcscmp(CurrentType, FileType))
 					{
-						return true;
+						switch (i)
+						{
+						case 0:
+						case 1:
+							return MP3_TYPE;
+						case 2:
+						case 3:
+							return WAV_TYPE;
+						case 4:
+						case 5:
+							return FLAC_TYPE;
+						case 6:
+						case 7:
+							return AIFF_TYPE;
+						case 8:
+						case 9:
+							return AIFF_TYPE;
+						case 10:
+						case 11:
+							return OGG_TYPE;
+						case 12:
+						case 13:
+							return OPUS_TYPE;
+						case 14:
+						case 15:
+							return ALAC_TYPE;
+						case 16:
+						case 17:
+							return AAC_TYPE;
+						case 18:
+						case 19:
+							return AAC_TYPE;
+						case 20:
+						case 21:
+							return RAW_TYPE;
+						default:
+							return UNKNOWN_TYPE;
+							break;
+						}
 					}
 				}
 			}
 		}
 
-		return false;
+		return UNKNOWN_TYPE;
 	}
 
-	bool IsFileIsAudioW(const wchar_t* PathToFile)
+	FILE_TYPE IsFileIsAudioW(const wchar_t* PathToFile)
 	{
 		int StringSize = 0;
 		int TypeSize = 0;
@@ -743,17 +784,54 @@ public:
 
 			if (TypeSize)
 			{
-				for (LPCWSTR CurrentType : szTypes)
+				for (size_t i = 0; i < 20; i++)
 				{
-					if (!wcscmp(CurrentType, (&PathToFile[0] + StringSize - TypeSize)))
+					LPCWSTR CurrentType = szTypes[i];
+					LPCWSTR FileType = (PathToFile + wcslen(PathToFile) - (TypeSize - 1));
+					if (!wcscmp(CurrentType, FileType))
 					{
-						return true;
+						switch (i)
+						{
+						case 0:
+						case 1:
+							return MP3_TYPE;
+						case 2:
+						case 3:
+							return WAV_TYPE;
+						case 4:
+						case 5:
+							return FLAC_TYPE;
+						case 6:
+						case 7:
+							return AIFF_TYPE;
+						case 8:
+						case 9:
+							return AIFF_TYPE;
+						case 10:
+						case 11:
+							return OGG_TYPE;
+						case 12:
+						case 13:
+							return OPUS_TYPE;
+						case 14:
+						case 15:
+							return ALAC_TYPE;
+						case 16:
+						case 17:
+							return AAC_TYPE;
+						case 18:
+						case 19:
+							return AAC_TYPE;
+						default:
+							return UNKNOWN_TYPE;
+							break;
+						}
 					}
 				}
 			}
 		}
 
-		return false;
+		return UNKNOWN_TYPE;
 	}
 
 	void CloseThisHandle(OSRHandle& OutHandle) override

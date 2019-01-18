@@ -10,257 +10,200 @@
 *********************************************************/
 #include "stdafx.h"
 
-VOID
-WMFReader::WMFInit()
+bool isStarted = false;
+
+IMFDecoder::IMFDecoder() : pSourceReader(nullptr), pMediaType(nullptr), pSecondMediaType(nullptr)
 {
-	FAILEDX2((MFCreateAttributes(&pAttribute, 1)));
-	FAILEDX2(pAttribute->SetUINT32(MF_LOW_LATENCY, TRUE));
+
 }
 
-BOOL
-WMFReader::IsSupportedByMWF(
-	LPCWSTR lpPath,
-	WAVEFORMATEX** waveFormat
-)
+void
+IMFDecoder::Release()
+{
+	_RELEASE(pSourceReader);
+	_RELEASE(pMediaType);
+	_RELEASE(pSecondMediaType);
+}
+
+void
+IMFDecoder::DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t& OutSize, WAVE_EX& waveFormat, FILE_TYPE& fileType)
 {
 	IMFPresentationDescriptor* pPresentDesc = nullptr;
 	IMFSourceResolver* pSrcResolver = nullptr;
 	IMFMediaSource* pMediaSrc = nullptr;
 	IUnknown* pSrc = nullptr;
+	WSTRING_PATH szPath = { 0 };
+	std::vector<BYTE> lpData;
 
+	if (MultiByteToWideChar(CP_UTF8, 0, PathToFileUTF8, strlen(PathToFileUTF8) + 1, szPath, sizeof(WSTRING_PATH)))
 	{
 		MF_OBJECT_TYPE ObjectType = MF_OBJECT_INVALID;
 
 		// create source resolver to get media source
-		_DEB(MFCreateSourceResolver(&pSrcResolver));
-		_DEB(pSrcResolver->CreateObjectFromURL(lpPath, MF_RESOLUTION_MEDIASOURCE, NULL, &ObjectType, &pSrc));
-	}
+		MFCreateSourceResolver(&pSrcResolver);
+		pSrcResolver->CreateObjectFromURL(szPath, MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSrc);
 
-	if (!pSrc) { return FALSE; }
-	// query with media source
-	pSrc->QueryInterface(&pMediaSrc);
 
-	// get file duration (100 nanosecs count)
-	pMediaSrc->CreatePresentationDescriptor(&pPresentDesc);
-	pPresentDesc->GetUINT64(MF_PD_DURATION, &uDuration);
-	if (uDuration) { uDuration /= 10000; }
+		if (!pSrc) { return; }
+		// query with media source
+		pSrc->QueryInterface(&pMediaSrc);
 
-	// release all stuff
-	_RELEASE(pPresentDesc);
-	_RELEASE(pSrcResolver);
-	_RELEASE(pSrc);
+		// get file duration (100 nanosecs count)
+		pMediaSrc->CreatePresentationDescriptor(&pPresentDesc);
+		pPresentDesc->GetUINT64(MF_PD_DURATION, &uDuration);
+		if (uDuration) { uDuration /= 10000; }
 
-	// open source reader
-	MFCreateSourceReaderFromMediaSource(pMediaSrc, pAttribute, &pSourceReader);
+		// release all stuff
+		_RELEASE(pPresentDesc);
+		_RELEASE(pSrcResolver);
+		_RELEASE(pSrc);
 
-	// select first and deselect all other streams
-	pSourceReader->SetStreamSelection((DWORD)MF_SOURCE_READER_ALL_STREAMS, FALSE);
-	pSourceReader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
+		// open source reader
+		MFCreateSourceReaderFromMediaSource(pMediaSrc, nullptr, &pSourceReader);
 
-	DWORD32 dwSizeOfWaveFormat = 0;
+		// select first and deselect all other streams
+		pSourceReader->SetStreamSelection((DWORD)MF_SOURCE_READER_ALL_STREAMS, FALSE);
+		pSourceReader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
 
-	// get media type
-	pSourceReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, &pMediaType);
-	MFCreateWaveFormatExFromMFMediaType(pMediaType, waveFormat, &dwSizeOfWaveFormat);
+		DWORD32 dwSizeOfWaveFormat = 0;
 
-	if ((*waveFormat)->wBitsPerSample != 24) { return TRUE; }
+		WAVEFORMATEX* pWave = nullptr;
 
-	if ((*waveFormat)->wFormatTag == 1)
-	{
-		CoTaskMemFree(*waveFormat);
-		*waveFormat = nullptr;
+		// get media type
+		pSourceReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, &pMediaType);
+		MFCreateWaveFormatExFromMFMediaType(pMediaType, &pWave, &dwSizeOfWaveFormat);
+
+		CoTaskMemFree(pWave);
+		pWave = nullptr;
+
+		if (pWave->wBitsPerSample == 24 && pWave->wFormatTag == 1) 
+		{
+			_RELEASE(pSourceReader);
+			_RELEASE(pMediaSrc);
+			return;
+		}
+
+		GUID MajorType = { NULL };
+		GUID SubType = { NULL };
+
+		// get GUID
+		pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &MajorType);
+
+#ifdef DEBUG
+		// Video is not supported 
+		if (MajorType != MFMediaType_Audio) { DEBUG_BREAK; }
+#endif
+
+		pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &SubType);
+
+		// get info about compress
+		BOOL isCompressed = FALSE;
+		pMediaType->IsCompressedFormat(&isCompressed);
+
+		// if file is PCM - don't create media type
+		if (SubType == MFAudioFormat_Float || SubType == MFAudioFormat_PCM || !isCompressed)
+		{
+			pMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+			pMediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+		}
+		else
+		{
+			// set reader to PCM 
+			MFCreateMediaType(&pSecondMediaType);
+			pSecondMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+			pSecondMediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+			pSourceReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, pSecondMediaType);
+		}
+
+		IMFMediaType* pUncompressedAudioType = nullptr;
+		DWORD32 dwSizeOfWaveFormat = NULL;
+
+		// set cuurent format
+		pSourceReader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &pUncompressedAudioType);
+		MFCreateWaveFormatExFromMFMediaType(pUncompressedAudioType, &pWave, &dwSizeOfWaveFormat);
+		pSourceReader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
+
+		IMFSample* pSample = nullptr;
+		IMFMediaBuffer* pBuffer = nullptr;
+		BYTE* localAudioData = nullptr;
+		DWORD dwLocalAudioDataLength = 0;
+		DWORD dwSampleCount = 0;
+		DWORD flags = 0;
+		WORD* pD = nullptr;
+
+		size_t Bitrate = pWave->nChannels + pWave->nAvgBytesPerSec + (pWave->wBitsPerSample / 8);
+		size_t OutSize = Bitrate * (uDuration / 1000) + Bitrate * (uDuration % 1000);
+		lpData.reserve(OutSize);
+
+		memcpy(&waveFormat, pWave, sizeof(WAVEFORMATEX));
+		CoTaskMemFree(pWave);
+
+		TaskbarValue* pValue = *GetTaskbarPointer();
+		size_t ti = 0;
+		f32 Percent = OutSize / 100;
+
+		while (true)
+		{
+			pSourceReader->ReadSample((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, nullptr, &flags, nullptr, &pSample);
+
+			// check whether the data is still valid
+			if (flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED || flags & MF_SOURCE_READERF_ENDOFSTREAM) { break; }
+			if (pSample == nullptr) { continue; }
+
+			// convert data to contiguous buffer
+			pSample->ConvertToContiguousBuffer(&pBuffer);
+			pBuffer->Lock(&localAudioData, nullptr, &dwLocalAudioDataLength);
+			uSamplesLength += dwLocalAudioDataLength;
+
+			for (DWORD i = 0; i < dwLocalAudioDataLength; i++)
+			{
+				lpData.push_back(localAudioData[i]);
+			}
+
+			CurrentPercent = uSamplesLength / Percent;
+
+			if (ti % 10)
+			{
+				pValue->SetValue(uSamplesLength, OutSize);
+			}
+
+			pBuffer->Unlock();
+			localAudioData = nullptr;
+			ti++;
+		}
+
+		OutSize = lpData.size();
+		pOutFile = FastAlloc(OutSize * 2);
+		pD = (WORD*)&lpData[0];
+		
+		for (size_t i = 0; i < OutSize; i++)
+		{
+			((f32*)(pOutFile))[i] = i16tof32(pD[i]);
+		}
+
+		waveFormat.wFormatTag = 3;
+		waveFormat.wBitsPerSample = 32;
+		waveFormat.nAvgBytesPerSec = (waveFormat.nSamplesPerSec * waveFormat.wBitsPerSample * waveFormat.nChannels) / 8;
+		fileType = MP3_TYPE;
+
+		pValue->SetCompleted();
+
+		_RELEASE(pSample);
+		_RELEASE(pBuffer);
+		_RELEASE(pUncompressedAudioType);
 		_RELEASE(pSourceReader);
 		_RELEASE(pMediaSrc);
 	}
-
-	return FALSE;
 }
 
-VOID
-WMFReader::LoadFileToMediaBuffer(
-	std::vector<BYTE>& lpData,
-	WAVEFORMATEX** waveFormat
-)
+void 
+IMFDecoder::EncodeFile(const char* OutPath, void* pFile, size_t FileSize, WAVE_EX waveFormat, FILE_TYPE& fileType)
 {
-	GUID MajorType = { NULL };
-	GUID SubType = { NULL };
 
-	// get GUID
-	pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &MajorType);
-
-#ifdef DEBUG
-	// Video is not supported 
-	if (MajorType != MFMediaType_Audio) { DEBUG_BREAK; }
-#endif
-
-	pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &SubType);
-
-	// get info about compress
-	BOOL isCompressed = FALSE;
-	pMediaType->IsCompressedFormat(&isCompressed);
-
-	// if file is PCM - don't create media type
-	if (SubType == MFAudioFormat_Float || SubType == MFAudioFormat_PCM || !isCompressed)
-	{
-		pMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
-		pMediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
-	}
-	else
-	{
-		// set reader to PCM 
-		MFCreateMediaType(&pSecondMediaType);
-		pSecondMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
-		pSecondMediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
-		pSourceReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, pSecondMediaType);
-	}
-
-	IMFMediaType* pUncompressedAudioType = nullptr;
-	DWORD32 dwSizeOfWaveFormat = NULL;
-
-	// set cuurent format
-	pSourceReader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &pUncompressedAudioType);
-	MFCreateWaveFormatExFromMFMediaType(pUncompressedAudioType, waveFormat, &dwSizeOfWaveFormat);
-	pSourceReader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
-
-	IMFSample* pSample = nullptr;
-	IMFMediaBuffer* pBuffer = nullptr;
-	BYTE* localAudioData = nullptr;
-	DWORD dwLocalAudioDataLength = 0;
-	DWORD dwSampleCount = 0;
-	DWORD flags = 0;
-
-	size_t Bitrate = ((*waveFormat)->nChannels + (*waveFormat)->nAvgBytesPerSec + ((*waveFormat)->wBitsPerSample / 8));
-	size_t OutSize = Bitrate * (uDuration / 1000) + Bitrate * (uDuration % 1000);
-	lpData.reserve(OutSize);
-
-	TaskbarValue* pValue = *GetTaskbarPointer();
-	size_t ti = 0;
-
-	while (true)
-	{
-		pSourceReader->ReadSample((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, nullptr, &flags, nullptr, &pSample);
-
-		// check whether the data is still valid
-		if (flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED || flags & MF_SOURCE_READERF_ENDOFSTREAM) { break; }
-		if (pSample == nullptr) { continue; }
-
-		// convert data to contiguous buffer
-		pSample->ConvertToContiguousBuffer(&pBuffer);
-		pBuffer->Lock(&localAudioData, nullptr, &dwLocalAudioDataLength);
-		uSamplesLength += dwLocalAudioDataLength;
-
-		for (DWORD i = 0; i < dwLocalAudioDataLength; i++)
-		{
-			lpData.push_back(localAudioData[i]);
-		}
-
-		if (ti % 10)
-		{
-			pValue->SetValue(uSamplesLength, OutSize);
-		}
-
-		pBuffer->Unlock();
-		localAudioData = nullptr;
-		ti++;
-	}
-
-	pValue->SetCompleted();
-
-	_RELEASE(pSample);
-	_RELEASE(pBuffer);
 }
 
-BOOL 
-WriteToFile(
-	HANDLE hFile, 
-	LPVOID pData,
-	DWORD cbSize
-)
+void 
+GetDecoderString(STRING128& OutString)
 {
-	DWORD cbWritten = 0;
-
-	BOOL bResult = WriteFile(hFile, pData, cbSize, &cbWritten, NULL);
-	return bResult;
-}
-
-VOID
-WMFReader::WriteFileFromMediaBufferEx(
-	IMFSourceReader* pSourceReader,
-	HANDLE hFile, 
-	std::vector<BYTE>& pData,
-	BYTE** pSecondData,
-	DWORD dwDataSize
-)
-{
-	DWORD32 dwWaveFormatSize = 0;
-	DWORD dwHeader = 0;
-	DWORD dwAudioData = 0;
-	DWORD dwMaxAudioData = 0;
-	WAVEFORMATEX* waveFormatToRecord = { NULL };
-
-	IMFMediaType* pPartialType = nullptr;
-	IMFMediaType* pNeedyType = nullptr;
-
-	// create media type from source reader
-	FAILEDX2(MFCreateMediaType(&pPartialType));
-
-	// set PCM Audio type
-	FAILEDX2(pPartialType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio));
-	FAILEDX2(pPartialType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM));
-
-	// set our new type
-	FAILEDX2(pSourceReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, pPartialType));
-	FAILEDX2(pSourceReader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &pNeedyType));
-
-	// select stream position
-	FAILEDX2(pSourceReader->SetStreamSelection((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE));
-
-	// get WAVEFORMATEX
-	FAILEDX2(MFCreateWaveFormatExFromMFMediaType(pNeedyType, &waveFormatToRecord, &dwWaveFormatSize));
-
-	// set header
-	DWORD dwHead[] = { FCC('RIFF'), NULL, FCC('WAVE'), FCC('fmt '), dwWaveFormatSize };
-	DWORD dwHeadData[] = { FCC('data'), NULL };
-
-	// write first data
-	ASSERT2(WriteToFile(hFile, dwHead, sizeof(dwHead)), L"Can't write header to file");
-	ASSERT2(WriteToFile(hFile, waveFormatToRecord, dwWaveFormatSize), L"Can't write WAVEFORMATEX to file");
-	ASSERT2(WriteToFile(hFile, dwHeadData, sizeof(dwHeadData)), L"Can't write header data to file");
-
-	CoTaskMemFree(waveFormatToRecord);
-	waveFormatToRecord = nullptr;
-
-	dwHeader = sizeof(dwHead) + dwWaveFormatSize + sizeof(dwHeadData);	// get size of header 
-
-	size_t pRawDataSize = NULL;
-	if (!dwDataSize || !(*pSecondData)) { pRawDataSize = pData.size(); }
-	else { pRawDataSize = dwDataSize; }
-
-	// write full audio data
-	if (!*pSecondData)
-	{
-		ASSERT2(WriteToFile(hFile, &pData[0], (DWORD)pRawDataSize), L"Can't write raw PCM data to file")
-	}
-	else 
-	{
-		ASSERT2(WriteToFile(hFile, *pSecondData, (DWORD)pRawDataSize), L"Can't write raw PCM data to file")
-	}
-
-	// get size of header
-	LARGE_INTEGER largeInt = { NULL };
-	largeInt.QuadPart = dwHeader - sizeof(DWORD);
-
-	// set pointer pos to write file size
-	ASSERT2(SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN), L"Can't set pointer position");
-	ASSERT2(WriteToFile(hFile, &pRawDataSize, sizeof(DWORD)), L"Can't write raw data size t file");
-
-	DWORD dwRIFFFileSize = dwHeader + ((DWORD)pRawDataSize) - 8;
-	largeInt.QuadPart = sizeof(FOURCC);
-
-	// finally write a file
-	ASSERT2(SetFilePointerEx(hFile, largeInt, NULL, FILE_BEGIN), L"Can't set pointer position");
-	ASSERT2(WriteToFile(hFile, &dwRIFFFileSize, sizeof(dwRIFFFileSize)), L"Can't write RIFF file data size");
-
-	// clode file handle
-	CloseHandle(hFile);
+	memcpy(OutString, u8"Media Foundation", strlen(u8"Media Foundation"));
 }

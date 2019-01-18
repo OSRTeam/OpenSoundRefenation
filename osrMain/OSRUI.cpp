@@ -287,6 +287,7 @@ OSR::UserInterface::CreateMainWindow()
 {
 	// set begin for multimedia period (needy for Sleep(16) or lower sleep time)
 	timeBeginPeriod(1);
+	MFStartup(MF_VERSION);
 
 	// create window class
 	WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"OSR_DAW", nullptr };

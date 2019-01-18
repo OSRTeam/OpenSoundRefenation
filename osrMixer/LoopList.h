@@ -1,5 +1,5 @@
 /*********************************************************
-* Copyright (C) VERTVER, 2018. All rights reserved.
+* Copyright (C) VERTVER, 2019. All rights reserved.
 * OpenSoundRefenation - WINAPI open-source DAW
 * MIT-License
 **********************************************************
@@ -12,26 +12,56 @@
 #include "stdafx.h"
 #include "OSRSystem.h"
 
-extern DLL_API AVReader ffReader;
-extern DLL_API WMFReader mfReader;
-
-class DLL_API LoopList
+class ISoundList : public IObject
 {
 public:
-	LoopList();
-	LoopList(DWORD dwCountOfFiles);
-	~LoopList();
+	virtual void load(const char* pathUTF8, i32& FileNumber) = 0;
+	virtual void unload(i32 FileNumber) = 0;
 
-	DWORD GetFilesCount() { return dwCurrentCountOfFiles; }
-	DWORD GetMaxFilesCount() { return dwMaxCountOfFiles; }
-	LPAUDIO_INFO GetLoopInfo() { return lpFileInfo; }
-
-	VOID SetMaxFilesCount(DWORD dwFilesCount) { dwMaxCountOfFiles = dwFilesCount; }
-
-	VOID LoadAudioFile(LPCWSTR lpFilePath, DWORD dwDecoderType, DWORD dwFormat, LPDWORD pSampleNumber);
-	
-private:
-	DWORD dwCurrentCountOfFiles;
-	DWORD dwMaxCountOfFiles;
+	i32 CurrentCountOfFiles;
+	i32 MaxCountOfFiles;
 	LPAUDIO_INFO lpFileInfo;
+	IOSRFileSystem* pFileSystem;
+};
+
+class DLL_API IWin32SoundList : public ISoundList
+{
+	IWin32SoundList()
+	{
+		pFileSystem = new IOSRWin32FileSystem();
+
+		MaxCountOfFiles = 100;
+		CurrentCountOfFiles = -1;
+		lpFileInfo = (LPAUDIO_INFO)AdvanceAlloc(MaxCountOfFiles * sizeof(AUDIO_INFO), HEAP_MEMORY_ALLOC);
+	}
+
+	IWin32SoundList(DWORD dwCurrentCountOfFiles1, DWORD dwMaxCountOfFiles1, LPAUDIO_INFO lpFileInfo1)
+	{
+		pFileSystem = new IOSRWin32FileSystem();
+
+		MaxCountOfFiles = dwMaxCountOfFiles1;
+		CurrentCountOfFiles = dwCurrentCountOfFiles1;
+		lpFileInfo = (LPAUDIO_INFO)AdvanceAlloc(MaxCountOfFiles * sizeof(AUDIO_INFO), HEAP_MEMORY_ALLOC);
+		memcpy(lpFileInfo, lpFileInfo1, MaxCountOfFiles * sizeof(AUDIO_INFO));
+	}
+
+	void load(const char* pathUTF8, i32& FileNumber) override;
+	void unload(i32 FileNumber) override;
+
+	void Release() override
+	{
+		for (size_t i = 0; i < MaxCountOfFiles; i++)
+		{
+			FREEKERNELHEAP(lpFileInfo[i].pSampleInfo);
+		}
+
+		_RELEASE(pFileSystem);
+		FREEKERNELHEAP(lpFileInfo);
+		delete this;
+	}
+
+	IObject* CloneObject() override
+	{
+		return new IWin32SoundList(CurrentCountOfFiles, MaxCountOfFiles, lpFileInfo);
+	}
 };

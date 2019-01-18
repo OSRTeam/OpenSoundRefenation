@@ -1,3 +1,13 @@
+/*********************************************************
+* Copyright (C) VERTVER, 2019. All rights reserved.
+* OpenSoundRefenation - WINAPI open-source DAW
+* MIT-License
+**********************************************************
+* Module Name: OSR Mixer
+**********************************************************
+* AsyncMixer.h
+* Acync mixer implementation
+*********************************************************/
 #pragma once
 #include "MixerBase.h"
 #include "IMWASAPI.h"

@@ -16,7 +16,7 @@ __forceinline
 void
 GetObjectsArray(ISoundInterfaceWASAPI* pInterface, HANDLE* pArray)
 {
-	HANDLE pVoid[6] = { 0 };
+	HANDLE pVoid[6] = { nullptr };
 
 	pVoid[0] = pInterface->hInputStart;
 	pVoid[1] = pInterface->hInputExit;
@@ -275,7 +275,7 @@ ISoundInterfaceWASAPI::EnumerateAudioInput(
 						if (value.vt == VT_LPWSTR)
 						{
 							// we need to get size of data to allocate
-							int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+							int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 							LPSTR lpNewString = nullptr;
 
 							if (StringSize && StringSize < sizeof(STRING256))
@@ -288,7 +288,7 @@ ISoundInterfaceWASAPI::EnumerateAudioInput(
 									i, value.pwszVal, waveFormat.nSamplesPerSec, waveFormat.wBitsPerSample, waveFormat.wBitsPerSample);
 
 								// convert to UTF-8
-								if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+								if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 								{
 									strcpy_s(pHostsList[i]->DeviceName, sizeof(STRING256), lpNewString);
 								}
@@ -399,7 +399,7 @@ ISoundInterfaceWASAPI::EnumerateAudioOutputs(
 						if (value.vt == VT_LPWSTR)
 						{
 							// we need to get size of data to allocate
-							int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+							int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 							LPSTR lpNewString = nullptr;
 
 							if (StringSize && StringSize < sizeof(STRING256))
@@ -412,7 +412,7 @@ ISoundInterfaceWASAPI::EnumerateAudioOutputs(
 									i, value.pwszVal, waveFormat.nSamplesPerSec, waveFormat.wBitsPerSample, waveFormat.wBitsPerSample);
 
 								// convert to UTF-8
-								if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+								if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 								{
 									strcpy_s(pHostsList[i]->DeviceName, sizeof(STRING256), lpNewString);
 								}
@@ -514,7 +514,7 @@ ISoundInterfaceWASAPI::GetHostDeviceOutInfo(
 					if (value.vt == VT_LPWSTR)
 					{
 						// we need to get size of data to allocate
-						int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+						int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 						LPSTR lpNewString = nullptr;
 
 						if (StringSize && StringSize < sizeof(STRING256))
@@ -527,7 +527,7 @@ ISoundInterfaceWASAPI::GetHostDeviceOutInfo(
 								DeviceNumber, value.pwszVal, waveFormat.nSamplesPerSec, waveFormat.wBitsPerSample, waveFormat.wBitsPerSample);
 
 							// convert to UTF-8
-							if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+							if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 							{
 								strcpy_s(HostInfo.DeviceName, sizeof(STRING256), lpNewString);
 							}
@@ -617,7 +617,7 @@ ISoundInterfaceWASAPI::GetHostDeviceInInfo(
 					if (value.vt == VT_LPWSTR)
 					{
 						// we need to get size of data to allocate
-						int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+						int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 						LPSTR lpNewString = nullptr;
 
 						if (StringSize && StringSize < sizeof(STRING256))
@@ -630,7 +630,7 @@ ISoundInterfaceWASAPI::GetHostDeviceInInfo(
 								DeviceNumber, value.pwszVal, waveFormat.nSamplesPerSec, waveFormat.wBitsPerSample, waveFormat.wBitsPerSample);
 
 							// convert to UTF-8
-							if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+							if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 							{
 								strcpy_s(HostInfo.DeviceName, sizeof(STRING256), lpNewString);
 							}
@@ -775,7 +775,7 @@ ISoundInterfaceWASAPI::CreateCaptureSoundDevice(f64 HostDelay, u32 DeviceNumber)
 				if (value.vt == VT_LPWSTR)
 				{
 					// we need to get size of data to allocate
-					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 					LPSTR lpNewString = nullptr;
 
 					if (StringSize && StringSize < sizeof(STRING256))
@@ -788,7 +788,7 @@ ISoundInterfaceWASAPI::CreateCaptureSoundDevice(f64 HostDelay, u32 DeviceNumber)
 							DeviceNumber, value.pwszVal, waveFormat.nSamplesPerSec, waveFormat.wBitsPerSample, waveFormat.wBitsPerSample);
 
 						// convert to UTF-8
-						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 						{
 							strcpy_s(InputHost.DeviceName, sizeof(STRING256), lpNewString);
 						}
@@ -938,7 +938,7 @@ ISoundInterfaceWASAPI::CreateRenderSoundDevice(
 				if (value.vt == VT_LPWSTR)
 				{
 					// we need to get size of data to allocate
-					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 					LPSTR lpNewString = nullptr;
 
 					if (StringSize && StringSize < sizeof(STRING256))
@@ -951,7 +951,7 @@ ISoundInterfaceWASAPI::CreateRenderSoundDevice(
 							DeviceNumber, value.pwszVal, waveFormat.nSamplesPerSec, waveFormat.wBitsPerSample, waveFormat.wBitsPerSample);
 
 						// convert to UTF-8
-						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 						{
 							strcpy_s(OutputHost.DeviceName, sizeof(STRING256), lpNewString);
 						}
@@ -1116,7 +1116,7 @@ ISoundInterfaceWASAPI::CreateCaptureDefaultSoundDevice(
 				if (value.vt == VT_LPWSTR)
 				{
 					// we need to get size of data to allocate
-					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 					LPSTR lpNewString = nullptr;
 
 					if (StringSize && StringSize < sizeof(STRING256))
@@ -1125,7 +1125,7 @@ ISoundInterfaceWASAPI::CreateCaptureDefaultSoundDevice(
 						lpNewString = (LPSTR)FastAlloc(++StringSize);
 
 						// convert to UTF-8
-						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 						{
 							strcpy_s(InputHost.DeviceName, sizeof(STRING256), lpNewString);
 						}
@@ -1270,7 +1270,7 @@ ISoundInterfaceWASAPI::CreateRenderDefaultSoundDevice(f64 HostDelay)
 				if (value.vt == VT_LPWSTR)
 				{
 					// we need to get size of data to allocate
-					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, NULL, NULL);
+					int StringSize = WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, nullptr, 0, nullptr, nullptr);
 					LPSTR lpNewString = nullptr;
 
 					if (StringSize && StringSize < sizeof(STRING256))
@@ -1279,7 +1279,7 @@ ISoundInterfaceWASAPI::CreateRenderDefaultSoundDevice(f64 HostDelay)
 						lpNewString = (LPSTR)FastAlloc(++StringSize);
 
 						// convert to UTF-8
-						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, NULL, NULL))
+						if (WideCharToMultiByte(CP_UTF8, 0, value.pwszVal, -1, lpNewString, StringSize, nullptr, nullptr))
 						{
 							strcpy_s(OutputHost.DeviceName, sizeof(STRING256), lpNewString);
 						}
@@ -1438,7 +1438,13 @@ ISoundInterfaceWASAPI::CloseRenderSoundDevice()
 OSRCODE
 ISoundInterfaceWASAPI::PlayHost()
 {
-	if (pOutputClient) { pOutputClient->Start(); }
+	if (pOutputClient)
+	{
+		if (FAILED(pOutputClient->Start()))
+		{
+			return MXR_OSR_NO_OUT;
+		}
+	}
 
 	ResetEvent(hOutputExit);
 	SetEvent(hOutputStart);
@@ -1473,41 +1479,9 @@ ISoundInterfaceWASAPI::RecvPacket(
 	{
 	case SoundData:
 		if (DataSize > 8)
-		{
-			try
-			{
-				CurrentNumber = __LINE__; memcpy(pOutputBuffer, pData, DataSize);
-			}
-			catch (...)
-			{
-				STRING512 szString = { 0 };
-				WSTRING512 szString2 = { 0 };
-
-				_snprintf_s(
-					szString,
-					512,
-					"The application thrown the exception at %i line. File: %s. Are you sure to continue use application?",
-					CurrentNumber,
-					CurrentString
-				);
-
-				for (size_t i = 0; i < 512; i++)
-				{
-					szString2[i] = (WCHAR)szString[i];
-				}
-
-				if (THROW2(szString2))
-				{
-					WMSG_LOG(L"\n");
-					WMSG_LOG(szString2);
-					WMSG_LOG(L"\n");
-				}
-				else
-				{
-					DestroyApplication(0x2224);
-				}
-			}
-
+		{		
+			memcpy(pOutputBuffer, pData, DataSize);
+	
 			// set event than we are end to load data
 			SetEvent(hOutputLoadEvent);
 		}
@@ -1608,8 +1582,22 @@ ISoundInterfaceWASAPI::Release()
 IObject* 
 ISoundInterfaceWASAPI::CloneObject()
 {
+	IMMDevice* pInputDevice1 = nullptr;
+	IMMDevice* pOutputDevice1 = nullptr;
+	IAudioClient* pInputClient1 = nullptr;
+	IAudioClient* pOutputClient1 = nullptr;
+	IAudioRenderClient* pRenderClient1 = nullptr;
+	IAudioCaptureClient* pCaptureClient1 = nullptr;
+
+	if (pInputDevice)	{ pInputDevice->QueryInterface(IID_PPV_ARGS(&pInputDevice1));		}
+	if (pOutputDevice)	{ pOutputDevice->QueryInterface(IID_PPV_ARGS(&pOutputDevice1));		}
+	if (pInputClient)	{ pInputClient->QueryInterface(IID_PPV_ARGS(&pInputClient1));		}
+	if (pOutputClient)	{ pOutputClient->QueryInterface(IID_PPV_ARGS(&pOutputClient1));		}
+	if (pRenderClient)	{ pRenderClient->QueryInterface(IID_PPV_ARGS(&pRenderClient1));		}
+	if (pCaptureClient) { pCaptureClient->QueryInterface(IID_PPV_ARGS(&pCaptureClient1));	}
+
 	return new ISoundInterfaceWASAPI(
-		pInputDevice, pOutputDevice, pInputClient, pOutputClient, pRenderClient, pCaptureClient, InputHost, OutputHost
+		pInputDevice1, pOutputDevice1, pInputClient1, pOutputClient1, pRenderClient1, pCaptureClient1, InputHost, OutputHost
 	);
 }
 

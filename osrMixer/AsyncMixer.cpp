@@ -1,3 +1,13 @@
+/*********************************************************
+* Copyright (C) VERTVER, 2019. All rights reserved.
+* OpenSoundRefenation - WINAPI open-source DAW
+* MIT-License
+**********************************************************
+* Module Name: OSR Mixer
+**********************************************************
+* AsyncMixer.cpp
+* Acync mixer implementation
+*********************************************************/
 #include "stdafx.h"
 #include "AsyncMixer.h"
 
@@ -5,12 +15,37 @@ DWORD
 WINAPIV
 AsyncMixerThreadProc(LPVOID pData)
 {
+	u32 dwWait = 0;
+	BOOL isPlay = TRUE;
+	bool isFirst = true;
 	IMixerAsync* pMixer = (IMixerAsync*)pData;
 	HANDLE hArray[] = { pMixer->hReleaseThread, pMixer->hWaitThread, pMixer->hStartThread };
-	DWORD dwWait = 0;
-	BOOL isPlay = TRUE;
+	WAVEFORMATEX waveFormat = ConvertToWaveFormat(pMixer->HostsInfo[1].FormatType);
+	size_t BufSize = pMixer->HostsInfo[1].BufferSize;
+	u8* pOutBuffer = (u8*)FastAlloc(BufSize);
+	float* pInVstData[16] = { nullptr };
+	float* pOutVstData[16] = { nullptr };
 
-	while ((dwWait = WaitForMultipleObjects(3, hArray, FALSE, INFINITE)) && isPlay)
+	// allocate input buffers
+	for (f32*& pvData : pInVstData)
+	{
+		pvData = (f32*)FastAlloc(BufSize * sizeof(f32) / waveFormat.nChannels);
+	}
+
+	// allocate output buffers
+	for (f32*& pvData : pOutVstData)
+	{
+		pvData = (f32*)FastAlloc(BufSize * sizeof(f32) / waveFormat.nChannels);
+	}
+
+	if (OSRFAILED(pMixer->pSound->PlayHost()))
+	{
+		dwWait = u32(-1);
+		goto clean;
+	}
+
+	// wait for any event
+	while (((dwWait = WaitForMultipleObjects(3, hArray, FALSE, INFINITE)) != WAIT_FAILED) && isPlay)
 	{
 		switch (dwWait)
 		{
@@ -21,11 +56,79 @@ AsyncMixerThreadProc(LPVOID pData)
 			Sleep(5);
 			break;
 		case WAIT_OBJECT_0 + 2:
-			break;
+		{
+			for (TRACK_INFO track : pMixer->tracksInfo)
+			{
+				// process by VST plugin
+				for (IObject* ThisObject : track.pEffectHost)
+				{
+					IWin32VSTHost* pVstHost = reinterpret_cast<IWin32VSTHost*>(ThisObject);
+
+					if (pVstHost)
+					{
+						// copy data from track buffer
+						for (size_t i = 0; i < waveFormat.nChannels; i++)
+						{
+							memcpy(pInVstData[i], track.pData->pOutputBuffer[i], BufSize * sizeof(f32) / waveFormat.nChannels);
+						}
+
+						// process VST
+						pVstHost->ProcessAudio(pInVstData, pOutVstData, BufSize / 2);
+
+						// copy data from output buffer to track buffer
+						for (size_t i = 0; i < waveFormat.nChannels; i++)
+						{
+							memcpy(track.pData->pOutputBuffer[i], pOutVstData[i], BufSize * sizeof(f32) / waveFormat.nChannels);
+						}
+					}
+				}
+
+				// mix data
+				for (size_t u = 0; u < waveFormat.nChannels; u++)
+				{
+					// Output buffer data + local track data = mixed data
+					for (size_t i = 0; i < pMixer->HostsInfo[1].BufferSize / 2; i++)
+					{
+						pMixer->pData->pOutputBuffer[u][i] += track.pData->pOutputBuffer[u][i];
+					}
+				}
+			}
+
+			pMixer->pData->ConvertToPlay(pOutBuffer);
+
+			if (isFirst)
+			{
+				// create output thread
+				pMixer->pSound->RecvPacket((LPVOID)2, DeviceOutputData, 8);
+				isFirst = false;
+			}
+
+			pMixer->pSound->RecvPacket(pOutBuffer, SoundData, pMixer->tracksInfo[0].BufferSize);
 		}
+		}
+		break;
 	}
 
-	return 0;
+	pMixer->pSound->StopHost();
+	dwWait = 0;
+
+clean:
+	// release input buffers
+	for (float* pvData : pInVstData)
+	{
+		FREEKERNELHEAP(pvData);
+	}
+
+	// release output buffer
+	for (float* pvData : pOutVstData)
+	{
+		FREEKERNELHEAP(pvData);
+	}
+
+	FREEKERNELHEAP(pOutBuffer);
+	isFirst = false;
+
+	return dwWait;
 }
 
 OSRCODE 
@@ -42,7 +145,16 @@ IMixerAsync::start(int Device)
 
 	memcpy(&HostsInfo[1], &pSound->OutputHost, sizeof(AUDIO_HOST));
 
-	pData = FastAlloc(HostsInfo[1].BufferSize);
+	WAVEFORMATEX wf = ConvertToWaveFormat(HostsInfo[1].FormatType);
+
+	if (!pData)
+	{
+		pData = new OSRSample(wf.wBitsPerSample, wf.nChannels, HostsInfo[1].BufferSize / 2, wf.nSamplesPerSec);
+		for (u32 i = 0; i < pData->ChannelsOutput; i++)
+		{
+			pData->pOutputBuffer[i] = (f32*)AdvanceAlloc(HostsInfo[1].BufferSize / 2 * sizeof(f32), NULL);
+		}
+	}
 
 	return OSR_SUCCESS;
 }
@@ -61,7 +173,16 @@ IMixerAsync::start_delay(int Device, f64 HostDelay)
 
 	memcpy(&HostsInfo[1], &pSound->OutputHost, sizeof(AUDIO_HOST));
 
-	pData = FastAlloc(HostsInfo[1].BufferSize);
+	WAVEFORMATEX wf = ConvertToWaveFormat(HostsInfo[1].FormatType);
+
+	if (!pData)
+	{
+		pData = new OSRSample(wf.wBitsPerSample, wf.nChannels, HostsInfo[1].BufferSize / 2, wf.nSamplesPerSec);
+		for (u32 i = 0; i < pData->ChannelsOutput; i++)
+		{
+			pData->pOutputBuffer[i] = (f32*)AdvanceAlloc(HostsInfo[1].BufferSize / 2 * sizeof(f32), NULL);
+		}
+	}
 
 	return OSR_SUCCESS;
 }
@@ -110,6 +231,8 @@ IMixerAsync::add_track(u8 Channels, u32 SampleRate, u32& TrackNumber)
 {
 	if (TracksCount <= 256)
 	{
+		WAVEFORMATEX wf = ConvertToWaveFormat(HostsInfo[1].FormatType);
+
 		tracksInfo[TrackNumber].TrackNumber = TrackNumber;
 		tracksInfo[TrackNumber].SampleRate = SampleRate;
 		tracksInfo[TrackNumber].isActivated = true;
@@ -122,7 +245,13 @@ IMixerAsync::add_track(u8 Channels, u32 SampleRate, u32& TrackNumber)
 		tracksInfo[TrackNumber].Channels = Channels;
 		tracksInfo[TrackNumber].GainLevel = 0.f;
 		tracksInfo[TrackNumber].WideImaging = 0.f;
-		tracksInfo[TrackNumber].pData = FastAlloc(tracksInfo[TrackNumber].BufferSize);
+		tracksInfo[TrackNumber].pData = new OSRSample(wf.wBitsPerSample, wf.nChannels, HostsInfo[1].BufferSize, wf.nSamplesPerSec);
+
+		for (u32 i = 0; i < tracksInfo[TrackNumber].pData->ChannelsOutput; i++)
+		{
+			tracksInfo[TrackNumber].pData->pOutputBuffer[i] = (f32*)AdvanceAlloc(HostsInfo[1].BufferSize * sizeof(f32), NULL);
+		}
+		
 		TrackNumber = ++TracksCount;
 
 		memset(tracksInfo[TrackNumber].szTrackName, 0, 256);
@@ -138,7 +267,8 @@ IMixerAsync::add_track(u8 Channels, u32 SampleRate, u32& TrackNumber)
 OSRCODE 
 IMixerAsync::delete_track(u32 TrackNumber)
 {
-	if (TrackNumber > TracksCount) { return KERN_OSR_BAD_ALLOC; }
+	if (TrackNumber > TracksCount)		{ return KERN_OSR_BAD_ALLOC; }
+	if (tracksInfo[TrackNumber].pData)	{ delete tracksInfo[TrackNumber].pData; }
 
 	memset(&tracksInfo[TrackNumber], 0, sizeof(TRACK_INFO));
 
@@ -170,7 +300,7 @@ IMixerAsync::add_effect(u32 TrackNumber, IObject* pEffectHost, size_t EffectSize
 
 		if (!isFull)
 		{
-			tracksInfo[TrackNumber].pEffectHost[EffectN] = pEffectHost->CloneObject();
+			tracksInfo[TrackNumber].pEffectHost[EffectN] = pEffectHost;
 			EffectNumber = EffectN;
 			EffectsNumber++;
 		}
@@ -271,81 +401,16 @@ IMixerAsync::put_data(u32 TrackNumber, void* pData, size_t DataSize)
 OSRCODE
 IMixerAsync::play()
 {
-	static bool isFirst = true;
-	float* pInVstData[16] = { nullptr };
-	float* pOutVstData[16] = { nullptr };
-	WAVEFORMATEX waveFormat = ConvertToWaveFormat(HostsInfo[1].FormatType);
-	size_t BufSize = HostsInfo[1].BufferSize;
-
-	SetEvent(hStartThread);
-	ResetEvent(hReleaseThread);
-	pSound->PlayHost();
-
-	// while stop event doesn't set
-	while (WaitForSingleObject(hReleaseThread, 0) != WAIT_OBJECT_0)
+	if (thread.CreateUserThread(nullptr, (ThreadFunc*)AsyncMixerThreadProc, this, L"OSR Async mixer worker"))
 	{
-		u8* pByte = static_cast<u8*>(pData);
+		// set start event for mixer
+		SetEvent(hStartThread);
+		ResetEvent(hReleaseThread);
 
-		f32* pInVstData[16]		= { nullptr };
-		f32* pOutVstData[16]	= { nullptr };
-
-		for (float*& pvData : pInVstData)	// vst host need for 2x channels (input and output signal)
-		{
-			if (!pvData) { pvData = (f32*)FastAlloc(BufSize * sizeof(f32) / waveFormat.nChannels); }
-		}
-
-		for (float*& pvData : pOutVstData)	// vst host need for 2x channels (input and output signal)
-		{
-			if (!pvData) { pvData = (f32*)FastAlloc(BufSize * sizeof(f32) / waveFormat.nChannels); }
-		}
-
-		for (TRACK_INFO track : tracksInfo)
-		{
-			u8* pTrackData = static_cast<u8*>(track.pData);
-
-			if (pTrackData)
-			{
-				for (IObject* ThisObject : track.pEffectHost)
-				{
-					IWin32VSTHost* pVstHost = reinterpret_cast<IWin32VSTHost*>(ThisObject);
-					if (pVstHost)
-					{
-						pVstHost->ProcessAudio(pInVstData, pOutVstData, BufSize / 2);
-					}
-				}
-
-				// mix data
-				for (size_t i = 0; i < track.BufferSize; i++)
-				{
-					pByte += pTrackData[i];
-				}
-			}
-		}
-
-		if (isFirst)
-		{
-			// create output thread
-			pSound->RecvPacket((LPVOID)2, DeviceOutputData, 8);
-			isFirst = false;
-		}
-
-		pSound->RecvPacket(pByte, SoundData, tracksInfo[0].BufferSize);
+		return OSR_SUCCESS;
 	}
 
-	for (float* pvData : pInVstData)
-	{
-		FREEKERNELHEAP(pvData);
-	}
-
-	for (float* pvData : pOutVstData)
-	{
-		FREEKERNELHEAP(pvData);
-	}
-
-
-	isFirst = false;
-
-	return OSR_SUCCESS;
+	return MXR_OSR_NO_OUT;
 }
 
 OSRCODE
