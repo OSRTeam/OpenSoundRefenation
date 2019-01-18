@@ -28,7 +28,7 @@ public:
 
 	IObject* CloneObject() override
 	{
-
+		return nullptr;		//#TODO:
 	}
 
 	IMFSourceReader* pSourceReader;

@@ -91,3 +91,10 @@ ISndFileDecoder::GetDecoderString(STRING128& OutString)
 {
 	memcpy(OutString, u8"libsndfile", strlen(u8"libsndfile"));
 }
+
+void
+ISndFileDecoder::Release()
+{
+	if (sndFile) { sf_close(sndFile); }
+	delete this;
+}

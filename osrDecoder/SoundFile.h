@@ -32,11 +32,7 @@ public:
 	void EncodeFile(const char* OutPath, void* pFile, size_t FileSize, WAVE_EX waveFormat, FILE_TYPE& fileType) override;
 	void GetDecoderString(STRING128& OutString) override;
 
-	void Release() override
-	{
-		if (sndFile) { sf_close(sndFile); }
-		delete this;
-	}
+	void Release() override;
 
 	IObject* CloneObject() override
 	{

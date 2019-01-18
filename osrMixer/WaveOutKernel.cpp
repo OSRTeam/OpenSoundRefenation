@@ -457,30 +457,29 @@ MMEngine::CreateDefaultDevice(
 	return OSR_SUCCESS;
 }
 
-ThreadSystem threadss;
 
 OSRCODE
 MMEngine::StartDevice(
 	LPVOID pProc
 )
 {
-	MMRESULT mRes = 0;
-	WAVOUT_SAMPLE_PROC* pData = reinterpret_cast<WAVOUT_SAMPLE_PROC*>(pProc);
+	//MMRESULT mRes = 0;
+	//WAVOUT_SAMPLE_PROC* pData = reinterpret_cast<WAVOUT_SAMPLE_PROC*>(pProc);
 
-	if (hOutput)
-	{
-		mRes = waveOutPause(hOutput);
-		mRes = waveOutRestart(hOutput);
-	}
+	//if (hOutput)
+	//{
+	//	mRes = waveOutPause(hOutput);
+	//	mRes = waveOutRestart(hOutput);
+	//}
 
-	// create new thread for MME worker
-	static const wchar_t* WasapiString = L"OSR MME worker thread";
-	WaveOutThreadId = threadss.CreateUserThread(nullptr, (ThreadFunc*)(WaveOutThreadProc), (LPVOID)pProc, WasapiString);
+	//// create new thread for MME worker
+	//static const wchar_t* WasapiString = L"OSR MME worker thread";
+	//WaveOutThreadId = threadss.CreateUserThread(nullptr, (ThreadFunc*)(WaveOutThreadProc), (LPVOID)pProc, WasapiString);
 
-	// set playing event
-	if (hMThreadExitEvent) { ResetEvent(hMThreadExitEvent); }
-	if (hMThreadLoadSamplesEvent) { ResetEvent(hMThreadLoadSamplesEvent); }
-	SetEvent(hMThreadLoadSamplesEvent);
+	//// set playing event
+	//if (hMThreadExitEvent) { ResetEvent(hMThreadExitEvent); }
+	//if (hMThreadLoadSamplesEvent) { ResetEvent(hMThreadLoadSamplesEvent); }
+	//SetEvent(hMThreadLoadSamplesEvent);
 
 	return OSR_SUCCESS;
 }

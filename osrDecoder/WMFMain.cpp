@@ -116,7 +116,6 @@ IMFDecoder::DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t& OutS
 		}
 
 		IMFMediaType* pUncompressedAudioType = nullptr;
-		DWORD32 dwSizeOfWaveFormat = NULL;
 
 		// set cuurent format
 		pSourceReader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &pUncompressedAudioType);
@@ -203,7 +202,7 @@ IMFDecoder::EncodeFile(const char* OutPath, void* pFile, size_t FileSize, WAVE_E
 }
 
 void 
-GetDecoderString(STRING128& OutString)
+IMFDecoder::GetDecoderString(STRING128& OutString)
 {
 	memcpy(OutString, u8"Media Foundation", strlen(u8"Media Foundation"));
 }

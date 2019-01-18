@@ -172,3 +172,8 @@ x64/Debug/OpenSoun.3BCAFC30.tlog/rc.write.1.tlog
 x64/Debug/Resource.res
 x64/Debug/vc141.pdb
 /.vs/OpenSoundRefenation/v15/ipch
+/osrMixer/x64/Debug/osrMixer.tlog/unsuccessfulbuild
+/osrMixer/x64/Debug/osrMixer.tlog
+/osrKernel/x64/Debug/osrKernel.tlog
+/osrDecoder/x64/Debug/osrDecoder.tlog/unsuccessfulbuild
+/osrDecoder/x64/Debug/osrDecoder.tlog
