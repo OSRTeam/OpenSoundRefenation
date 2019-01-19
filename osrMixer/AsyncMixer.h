@@ -17,6 +17,10 @@ class DLL_API IMixerAsync : public IMixerInterface
 public:
 	IMixerAsync(ISoundInterface* pSound1, AUDIO_HOST* HostsInfo1, TRACK_INFO* tracksInfo1, u32 EffectsNumber1, u32 TracksCount1)
 	{
+		hReleaseThread = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		hStartThread = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		hWaitThread = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+
 		pSound = (ISoundInterface*)pSound1->CloneObject();
 		EffectsNumber = EffectsNumber1;
 		TracksCount = TracksCount1;

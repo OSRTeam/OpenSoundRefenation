@@ -971,10 +971,9 @@ ISoundInterfaceWASAPI::CreateRenderSoundDevice(
 	OutputHost.FormatType = ConvertToSingleFormat(waveFormat);
 
 	WAVEFORMATEX* pWave = nullptr;
-	if (SUCCEEDED(pInputClient->GetMixFormat(&pWave)))
+	if (SUCCEEDED(pOutputClient->GetMixFormat(&pWave)))
 	{
 		memcpy(&waveFormat, pWave, sizeof(WAVEFORMATEX));
-		CoTaskMemFree(pWave);
 	}
 
 	REFERENCE_TIME refTimeMin = 0;
@@ -993,7 +992,8 @@ ISoundInterfaceWASAPI::CreateRenderSoundDevice(
 		}
 	}
 
-	hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+	// Important: the WAVEFORMATEX must be allocated by CoTaskMemAlloc()!!!
+	hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, pWave, nullptr);
 
 	if (FAILED(hr))
 	{
@@ -1022,6 +1022,8 @@ ISoundInterfaceWASAPI::CreateRenderSoundDevice(
 			return MXR_OSR_UNSUPPORTED_FMT;
 		}
 	}
+
+	CoTaskMemFree(pWave);
 
 	u32 Frames = 0;
 	pOutputClient->GetBufferSize(&Frames);
@@ -1299,10 +1301,9 @@ ISoundInterfaceWASAPI::CreateRenderDefaultSoundDevice(f64 HostDelay)
 	OutputHost.FormatType = ConvertToSingleFormat(waveFormat);
 
 	WAVEFORMATEX* pWave = nullptr;
-	if (SUCCEEDED(pInputClient->GetMixFormat(&pWave)))
+	if (SUCCEEDED(pOutputClient->GetMixFormat(&pWave)))
 	{
 		memcpy(&waveFormat, pWave, sizeof(WAVEFORMATEX));
-		CoTaskMemFree(pWave);
 	}
 
 	REFERENCE_TIME refTimeMin = 0;
@@ -1321,7 +1322,8 @@ ISoundInterfaceWASAPI::CreateRenderDefaultSoundDevice(f64 HostDelay)
 		}
 	}
 
-	hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, &waveFormat, nullptr);
+	// Important: the WAVEFORMATEX must be allocated by CoTaskMemAlloc()!!!
+	hr = pOutputClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, refTimeDefault, 0, pWave, nullptr);
 
 	if (FAILED(hr))
 	{
@@ -1350,6 +1352,8 @@ ISoundInterfaceWASAPI::CreateRenderDefaultSoundDevice(f64 HostDelay)
 			return MXR_OSR_UNSUPPORTED_FMT;
 		}
 	}
+
+	CoTaskMemFree(pWave);
 
 	u32 Frames = 0;
 	pOutputClient->GetBufferSize(&Frames);
@@ -1480,7 +1484,7 @@ ISoundInterfaceWASAPI::RecvPacket(
 	case SoundData:
 		if (DataSize > 8)
 		{		
-			memcpy(pOutputBuffer, pData, DataSize);
+			if (pOutputBuffer) memcpy(pOutputBuffer, pData, DataSize);
 	
 			// set event than we are end to load data
 			SetEvent(hOutputLoadEvent);
@@ -1524,7 +1528,7 @@ ISoundInterfaceWASAPI::RecvPacket(
 			break;
 
 		case OutputData::FlushBuffers2:
-			memset(pOutputBuffer, 0, DataSize);
+			if (pOutputBuffer) memset(pOutputBuffer, 0, DataSize);
 
 			// set event than we are end to load data
 			SetEvent(hOutputLoadEvent);

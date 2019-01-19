@@ -112,6 +112,8 @@ DropTarget::DragOver(
 	return S_OK;
 }
 
+STRING512 pOut = { 0 };
+
 HRESULT
 STDMETHODCALLTYPE
 DropTarget::Drop(
@@ -165,7 +167,6 @@ DropTarget::Drop(
 							HANDLE hFind = FindFirstFileW(szFilePaths, &findData);
 
 							// open file here
-							STRING512 pOut = { 0 }; 
 							WideCharToMultiByte(CP_UTF8, 0, szFilePaths, wcslen(szFilePaths), pOut, 512, nullptr, nullptr);
 							pMixer->pDecoder->DecodeObject(pOut, pMixer->pDecoder->NumberOfTrack);
 

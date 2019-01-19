@@ -55,9 +55,7 @@ IOSRDecoder::DecodeObject(
 )
 {
 	static ThreadSystem threadS = {};
-
-	FILE_TYPE pType = UNKNOWN_TYPE;
-	TRANSCODER_STRUCT pTc = { nullptr };
+	static TRANSCODER_STRUCT pTc = { nullptr };
 	pTc.InputFile = pInFile;
 	pTc.pThis = this;
 	pTc.pNum = &OutFile;
@@ -90,6 +88,7 @@ IOSRMixer::CreateMixer(f64 Delay)
 void 
 IOSRMixer::DestroyMixer()
 {
+	Stop();
 	pvMixer->close();
 }
 
@@ -139,14 +138,82 @@ IOSRMixer::SetPosition(f32 Position)
 
 }
 
+DWORD 
+WINAPIV
+PlayProc(LPVOID pProc)
+{
+	bool play = true;
+	IOSRMixer* pMixer = (IOSRMixer*)pProc;
+	HANDLE hArray[] = { pMixer->StartHandle, pMixer->EndHandle };
+	void* pData = nullptr;
+	u64 SamplePosition = 0;
+	i32 ToEndFileSize = 0;
+	u32 BufSize = pMixer->pvMixer->HostsInfo[1].BufferSize;
+
+	if (!pMixer->isPlay)
+	{
+		WAVE_EX wf = *(WAVE_EX*)&ConvertToWaveFormat(pMixer->pvMixer->HostsInfo[1].FormatType);
+		pMixer->pvMixer->add_track(wf.nChannels, wf.nSamplesPerSec, pMixer->TrackNum);
+		pMixer->pvMixer->play();
+	}
+
+	while (play)
+	{
+		switch (WaitForMultipleObjects(2, hArray, FALSE, INFINITE))
+		{
+		case WAIT_OBJECT_0:
+			if (!ToEndFileSize && !SamplePosition) 
+			{
+				ToEndFileSize = pMixer->pDecoder->pList->lpFileInfo[pMixer->pDecoder->NumberOfTrack].FileSize;
+			}
+
+			pData = (void*)ptrdiff_t(pMixer->pDecoder->pList->lpFileInfo[pMixer->pDecoder->NumberOfTrack].pSampleInfo->pSample + SamplePosition);
+
+			SamplePosition += (BufSize * sizeof(f32));
+			ToEndFileSize -= (BufSize * sizeof(f32));
+
+			if (ToEndFileSize <= 0)
+			{
+				play = false;
+			}
+
+			if (ToEndFileSize < BufSize * sizeof(f32))
+			{
+				pMixer->pvMixer->put_data(pMixer->TrackNum, pData, ToEndFileSize);
+			}
+			else
+			{
+				pMixer->pvMixer->put_data(pMixer->TrackNum, pData, BufSize * sizeof(f32));
+			}
+			break;
+		case WAIT_OBJECT_0 + 1:
+			play = false;
+		default:
+			break;
+		}
+	}
+
+	pMixer->pvMixer->stop();
+	pMixer->pvMixer->delete_track(pMixer->TrackNum);
+
+	return 0;
+}
+
 void
 IOSRMixer::Play()
 {
-	pvMixer->play();
+	thread.CreateUserThread(nullptr, (ThreadFunc*)PlayProc, this, L"OSR Mixer thread");
+
+	SetEvent(StartHandle);
+	ResetEvent(EndHandle);
 }
 
 void 
 IOSRMixer::Stop()
 {
-	pvMixer->stop();
+	if (isPlay)
+	{
+		SetEvent(EndHandle);
+		ResetEvent(StartHandle);
+	}
 }

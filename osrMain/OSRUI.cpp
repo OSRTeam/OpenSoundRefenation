@@ -153,6 +153,7 @@ CycleFunc()
 	if (bDemo)
 	{
 		static float f = 0.0f;
+		static bool isPlay = false;
 		static bool bClose = false;
 		int counter = 0;
 
@@ -169,12 +170,24 @@ CycleFunc()
 
 		if (ImGui::Button("Play Audio"))
 		{
-			pMixer->Play();
+			if (!isPlay)
+			{
+				pMixer->CreateMixer(100);
+				pMixer->Play();
+			}
+			else
+			{
+				pMixer->RestartMixer(100);
+			}
 		}
 
 		if (ImGui::Button("Stop Audio"))
 		{
-			pMixer->Stop();
+			if (isPlay)
+			{
+				pMixer->Stop();
+				pMixer->DestroyMixer();
+			}
 		}
 
 		if (ImGui::Button("Blur On/Off"))
@@ -188,11 +201,11 @@ CycleFunc()
 
 			if (!isOpened)
 			{
-				pMixer->OpenPlugin(0, 0);	//#TODO:
+				pMixer->OpenPlugin(1, 0);	//#TODO:
 			}
 			else
 			{
-				pMixer->ClosePlugin(0, 0);
+				pMixer->ClosePlugin(1, 0);
 			}
 		}
 
@@ -309,7 +322,7 @@ STRING_PATH szPath = { NULL };
 
 DWORD StartApplication(LPWSTR lpCmdLine)
 {
-	MSG msg = { 0 };
+	MSG msg = { nullptr };
 	IOSRUI* pUI = new IOSRUI();
 	IOSRMixer* pMixer = new IOSRMixer();
 	

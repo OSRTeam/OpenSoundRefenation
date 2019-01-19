@@ -66,6 +66,8 @@ class IOSRMixer : IObject
 public:
 	IOSRMixer()
 	{
+		StartHandle = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		EndHandle = CreateEventW(nullptr, TRUE, FALSE, nullptr);
 		pDecoder = new IOSRDecoder();
 		pvMixer = new IMixerAsync();
 	}
@@ -104,6 +106,11 @@ public:
 
 	IOSRDecoder* pDecoder;
 	IMixerInterface* pvMixer;
+	u32 TrackNum;
+	bool isPlay = false;
+	OSRHandle StartHandle;
+	OSRHandle EndHandle;
+	ThreadSystem thread;
 };
 
 class IOSRUI : IObject

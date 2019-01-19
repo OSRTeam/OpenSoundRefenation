@@ -62,37 +62,40 @@ AsyncMixerThreadProc(LPVOID pData)
 		{
 			for (TRACK_INFO track : pMixer->tracksInfo)
 			{
-				// process by VST plugin
-				for (IObject* ThisObject : track.pEffectHost)
+				if (track.pData)
 				{
-					IWin32VSTHost* pVstHost = reinterpret_cast<IWin32VSTHost*>(ThisObject);
-
-					if (pVstHost)
+					// process by VST plugin
+					for (IObject* ThisObject : track.pEffectHost)
 					{
-						// copy data from track buffer
-						for (size_t i = 0; i < waveFormat.nChannels; i++)
-						{
-							memcpy(pInVstData[i], track.pData->pOutputBuffer[i], BufSize * sizeof(f32) / waveFormat.nChannels);
-						}
+						IWin32VSTHost* pVstHost = reinterpret_cast<IWin32VSTHost*>(ThisObject);
 
-						// process VST
-						pVstHost->ProcessAudio(pInVstData, pOutVstData, BufSize / 2);
-
-						// copy data from output buffer to track buffer
-						for (size_t i = 0; i < waveFormat.nChannels; i++)
+						if (pVstHost)
 						{
-							memcpy(track.pData->pOutputBuffer[i], pOutVstData[i], BufSize * sizeof(f32) / waveFormat.nChannels);
+							// copy data from track buffer
+							for (size_t i = 0; i < waveFormat.nChannels; i++)
+							{
+								memcpy(pInVstData[i], track.pData->pOutputBuffer[i], BufSize * sizeof(f32) / waveFormat.nChannels);
+							}
+
+							// process VST
+							pVstHost->ProcessAudio(pInVstData, pOutVstData, BufSize / 2);
+
+							// copy data from output buffer to track buffer
+							for (size_t i = 0; i < waveFormat.nChannels; i++)
+							{
+								memcpy(track.pData->pOutputBuffer[i], pOutVstData[i], BufSize * sizeof(f32) / waveFormat.nChannels);
+							}
 						}
 					}
-				}
 
-				// mix data
-				for (size_t u = 0; u < waveFormat.nChannels; u++)
-				{
-					// Output buffer data + local track data = mixed data
-					for (size_t i = 0; i < pMixer->HostsInfo[1].BufferSize / 2; i++)
+					// mix data
+					for (size_t u = 0; u < waveFormat.nChannels; u++)
 					{
-						pMixer->pData->pOutputBuffer[u][i] += track.pData->pOutputBuffer[u][i];
+						// Output buffer data + local track data = mixed data
+						for (size_t i = 0; i < pMixer->HostsInfo[1].BufferSize / 2; i++)
+						{
+							pMixer->pData->pOutputBuffer[u][i] += track.pData->pOutputBuffer[u][i];
+						}
 					}
 				}
 			}
@@ -108,8 +111,8 @@ AsyncMixerThreadProc(LPVOID pData)
 
 			pMixer->pSound->RecvPacket(pOutBuffer, SoundData, pMixer->tracksInfo[0].BufferSize);
 		}
-		}
 		break;
+		}
 	}
 
 	pMixer->pSound->StopHost();
@@ -394,7 +397,7 @@ IMixerAsync::put_data(u32 TrackNumber, void* pData, size_t DataSize)
 {
 	if (pData && DataSize == tracksInfo[TrackNumber].BufferSize)
 	{
-		memcpy(tracksInfo[TrackNumber].pData, pData, DataSize);
+		tracksInfo[TrackNumber].pData->LoadSample(pData, DataSize / sizeof(f32), tracksInfo[TrackNumber].Bits, tracksInfo[TrackNumber].Channels, tracksInfo[TrackNumber].SampleRate);
 		return OSR_SUCCESS;
 	}
 
@@ -427,5 +430,9 @@ IMixerAsync::stop()
 
 IMixerAsync::IMixerAsync()
 {
+	hReleaseThread = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+	hStartThread = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+	hWaitThread = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+
 	pSound = new ISoundInterfaceWASAPI();
 }
