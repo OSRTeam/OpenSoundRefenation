@@ -24,12 +24,6 @@ DLL_API float ProgressBartest = 0.0;
 DiscordNetwork disc = {};
 
 DropTarget dropTarget;
-OSR::Mixer OutMixer;
-
-VOID
-OSR::UserInterface::CreateApplicationMenu()
-{
-}
 
 VOID 
 ImDrawCallbackPostBlur(
@@ -86,15 +80,35 @@ ImDrawCallbackPostBlur(
 		// Restore modified DX state
 		pCustomDeviceContext->RSSetScissorRects(old.ScissorRectsCount, old.ScissorRects);
 		pCustomDeviceContext->RSSetViewports(old.ViewportsCount, old.Viewports);
-		pCustomDeviceContext->PSSetShaderResources(0, 1, &old.PSShaderResource); if (old.PSShaderResource) old.PSShaderResource->Release();
-		pCustomDeviceContext->PSSetShader(old.PS, old.PSInstances, old.PSInstancesCount); if (old.PS) old.PS->Release();
-		for (UINT i = 0; i < old.PSInstancesCount; i++) if (old.PSInstances[i]) old.PSInstances[i]->Release();
-		pCustomDeviceContext->VSSetShader(old.VS, old.VSInstances, old.VSInstancesCount); if (old.VS) old.VS->Release();
-		for (UINT i = 0; i < old.VSInstancesCount; i++) if (old.VSInstances[i]) old.VSInstances[i]->Release();
+		pCustomDeviceContext->PSSetShaderResources(0, 1, &old.PSShaderResource);
+
+		_RELEASE(old.PSShaderResource);
+
+		pCustomDeviceContext->PSSetShader(old.PS, old.PSInstances, old.PSInstancesCount);
+
+		_RELEASE(old.PS);
+
+		for (UINT i = 0; i < old.PSInstancesCount; i++)
+		{
+			_RELEASE(old.PSInstances[i]);
+		}
+
+		pCustomDeviceContext->VSSetShader(old.VS, old.VSInstances, old.VSInstancesCount); 
+
+		_RELEASE(old.VS);
+
+		for (UINT i = 0; i < old.VSInstancesCount; i++)
+		{
+			_RELEASE(old.VSInstances[i]);
+		}
+
 		pCustomDeviceContext->IASetPrimitiveTopology(old.PrimitiveTopology);
-		pCustomDeviceContext->IASetIndexBuffer(old.IndexBuffer, old.IndexBufferFormat, old.IndexBufferOffset); if (old.IndexBuffer) old.IndexBuffer->Release();
-		pCustomDeviceContext->IASetVertexBuffers(0, 1, &old.VertexBuffer, &old.VertexBufferStride, &old.VertexBufferOffset); if (old.VertexBuffer) old.VertexBuffer->Release();
-		pCustomDeviceContext->IASetInputLayout(old.InputLayout); if (old.InputLayout) old.InputLayout->Release();
+		pCustomDeviceContext->IASetIndexBuffer(old.IndexBuffer, old.IndexBufferFormat, old.IndexBufferOffset);  
+		_RELEASE(old.IndexBuffer);
+		pCustomDeviceContext->IASetVertexBuffers(0, 1, &old.VertexBuffer, &old.VertexBufferStride, &old.VertexBufferOffset); 
+		_RELEASE(old.VertexBuffer);
+		pCustomDeviceContext->IASetInputLayout(old.InputLayout); 
+		_RELEASE(old.InputLayout);
 	}
 }
 
@@ -134,6 +148,8 @@ CycleFunc()
 	LS *= 0.995f;
 	RS *= 0.995f;
 
+	IOSRMixer* pMixer = (IOSRMixer*)GetWindowLongPtrW(dx11Renderer.GetCurrentHwnd(), -21);
+
 	if (bDemo)
 	{
 		static float f = 0.0f;
@@ -146,19 +162,19 @@ CycleFunc()
 
 		if (ImGui::SliderFloat("Track Position", &f, 0.0f, 1.0f))
 		{
-			OutMixer.SetAudioPosition(f);
+			pMixer->SetPosition(f);
 		}
 
 		ImGui::ColorEdit3("Clear color", (float*)&clear_color);
 
 		if (ImGui::Button("Play Audio"))
 		{
-			OutMixer.PlaySample();
+			pMixer->Play();
 		}
 
 		if (ImGui::Button("Stop Audio"))
 		{
-			OutMixer.StopSample();
+			pMixer->Stop();
 		}
 
 		if (ImGui::Button("Blur On/Off"))
@@ -168,7 +184,16 @@ CycleFunc()
 
 		if (ImGui::Button("Open/Close Plugin window"))
 		{
-			OutMixer.OpenPlugin(bClose);
+			static bool isOpened = false;
+
+			if (!isOpened)
+			{
+				pMixer->OpenPlugin(0, 0);	//#TODO:
+			}
+			else
+			{
+				pMixer->ClosePlugin(0, 0);
+			}
 		}
 
 		ImGui::SameLine();
@@ -282,55 +307,15 @@ WndProc(
 
 STRING_PATH szPath = { NULL };
 
-OSRCODE
-OSR::UserInterface::CreateMainWindow()
+DWORD StartApplication(LPWSTR lpCmdLine)
 {
+	MSG msg = { 0 };
+	IOSRUI* pUI = new IOSRUI();
+	IOSRMixer* pMixer = new IOSRMixer();
+	
 	// set begin for multimedia period (needy for Sleep(16) or lower sleep time)
 	timeBeginPeriod(1);
 	MFStartup(MF_VERSION);
-
-	// create window class
-	WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"OSR_DAW", nullptr };
-	wc.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_OSR));
-	wc.hIconSm = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_OSRSMALL));
-	RegisterClassExW(&wc);
-
-	RECT rec = { 0, 0, 640, 360 };
-	AdjustWindowRectEx(&rec, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_APPWINDOW);
-
-	MainHwnd = CreateWindowW(
-		L"OSR_DAW",
-		L"Open Sound Refenation 0.46A",
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		rec.right - rec.left,
-		rec.bottom - rec.top,
-		nullptr,
-		nullptr,
-		wc.hInstance,
-		nullptr
-	);
-
-	if (OSRFAILED(dx11Renderer.CreateRenderWindow(MainHwnd)))
-	{
-		THROW2(L"Can't create render window");
-	}
-
-	ShowWindow(MainHwnd, SW_SHOWDEFAULT);
-	UpdateWindow(MainHwnd);
-
-	dropTarget.Window = MainHwnd;
-	dropTarget.AddMixer(&OutMixer);
-	RegisterDragDrop(MainHwnd, &dropTarget);
-
-	TaskbarValue** pTask = GetTaskbarPointer();
-	*pTask = new TaskbarValue(MainHwnd);
-
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->Clear();
 
 	{
 		// init static string with application path
@@ -338,34 +323,18 @@ OSR::UserInterface::CreateMainWindow()
 		GetApplicationDirectory(&lpPathe);
 	}
 
-	GetCurrentDirectoryA(sizeof(STRING_PATH), szPath);
-	snprintf(szPath, sizeof(STRING_PATH), "%s%s", szPath, "\\arimo_reg.ttf"); //-V541
+	pUI->CreateMainWindow();
 
-	ImFont* font = io.Fonts->AddFontFromFileTTF(szPath, 16.0f);
-	if (font) 
-	{
-		io.FontDefault = font; 
-	}
-	else 
-	{ 
-		io.Fonts->AddFontDefault();
-	}
-	io.Fonts->Build();
+	SetWindowLongPtr((HWND)pUI->WindowHandle, -21, (LONG_PTR)pMixer);
 
-	OutMixer.CreateMixer(MainHwnd, (LPVOID)&disc);
+	dropTarget.Window = pUI->WindowHandle;
+	dropTarget.AddMixer(pMixer);
+	RegisterDragDrop(pUI->WindowHandle, &dropTarget);
 
 	disc.Init();
 	disc.SetStatus(DiscordNetwork::StatusNumber::Waiting);
 
-	ImGui_ImplWin32_Init(MainHwnd);
-	ImGui_ImplDX11_Init(dx11Renderer.m_pDevice, dx11Renderer.m_pContext);
-
-	// Setup style
-	ImGui::StyleColorsDark();
-
 	// Main loop
-	MSG msg;
-	ZeroMemory(&msg, sizeof(msg));
 	while (msg.message != WM_QUIT)
 	{
 		if (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
@@ -386,6 +355,72 @@ OSR::UserInterface::CreateMainWindow()
 
 	// set end for period (in 1/10 cases we can get BSoD if failed) 
 	timeEndPeriod(1);
+	MFShutdown();
+
+	return 0;
+}
+
+OSRCODE
+IOSRUI::CreateMainWindow() 
+{
+	// create window class
+	WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"OSR_DAW", nullptr };
+	wc.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_OSR));
+	wc.hIconSm = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_OSRSMALL));
+	RegisterClassExW(&wc);
+
+	RECT rec = { 0, 0, 640, 360 };
+	AdjustWindowRectEx(&rec, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_APPWINDOW);
+
+	WindowHandle = CreateWindowW(
+		L"OSR_DAW",
+		L"Open Sound Refenation 0.51A",
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		rec.right - rec.left,
+		rec.bottom - rec.top,
+		nullptr,
+		nullptr,
+		wc.hInstance,
+		nullptr
+	);
+
+	if (OSRFAILED(dx11Renderer.CreateRenderWindow(WindowHandle)))
+	{
+		THROW2(L"Can't create render window");
+	}
+
+	ShowWindow(WindowHandle, SW_SHOWDEFAULT);
+	UpdateWindow(WindowHandle);
+
+	TaskbarValue** pTask = GetTaskbarPointer();
+	*pTask = new TaskbarValue(WindowHandle);
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->Clear();
+
+	GetCurrentDirectoryA(sizeof(STRING_PATH), szPath);
+	snprintf(szPath, sizeof(STRING_PATH), "%s%s", szPath, "\\arimo_reg.ttf"); //-V541
+
+	ImFont* font = io.Fonts->AddFontFromFileTTF(szPath, 16.0f);
+	if (font) 
+	{
+		io.FontDefault = font; 
+	}
+	else 
+	{ 
+		io.Fonts->AddFontDefault();
+	}
+	io.Fonts->Build();
+
+	ImGui_ImplWin32_Init(WindowHandle);
+	ImGui_ImplDX11_Init(dx11Renderer.m_pDevice, dx11Renderer.m_pContext);
+
+	// Setup style
+	ImGui::StyleColorsDark();
 
 	return OSR_SUCCESS;
 }

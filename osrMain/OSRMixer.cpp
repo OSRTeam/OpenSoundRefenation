@@ -4,166 +4,149 @@
 #include "DiscordPart.h"
 
 DiscordNetwork* pNetwork;
-IVSTHost* pHost = nullptr;
-MMEngine mmEngine;
-//IMEngine eEngine;
-LOOP_INFO lInfo;
 HANDLE hStartEvent;
-DWORD SamplesCount = 0;
-size_t uPlay;
-//WASAPI_SAMPLE_PROC SampleProc = { nullptr };
-WAVOUT_SAMPLE_PROC MProc = { nullptr };
 
 extern DLL_API bool IsBlur;
 extern DLL_API bool IsLoad; 
 
+typedef struct TRANSCODER_STRUCT
+{
+	const char* InputFile;
+	const char* OutputFile;
+	IObject* pThis;
+	i32* pNum;
+};
+
 VOID
 WINAPIV
-DecodeFileProc(
+TranscoderFileProc(
 	LPVOID pProc
 )
 {
 	IsLoad = true;
-	DECODE_STRUCT* pStruct = (DECODE_STRUCT*)pProc;
-	
-	DWORD SampleNumber = 0;
-	pStruct->pEngine->loopList.LoadAudioFile(pStruct->lpPath, USE_LIBSNDFILE, 0, &SampleNumber);
-	*pStruct->pLoopInfo = *(pStruct->pEngine->loopList.GetLoopInfo()->pSampleInfo);
+
+	TRANSCODER_STRUCT* pc = (TRANSCODER_STRUCT*)(pProc);
+	IOSRDecoder* pDecode = (IOSRDecoder*)pc->pThis;
+
+	if (pc->InputFile)
+	{
+		pDecode->pList->load(pc->InputFile, *pc->pNum);
+	}
+	else if (pc->OutputFile)
+	{
+		//#TODO: 
+	}
+	else
+	{
+		return;
+	}
+
 	SetEvent(hStartEvent);
 	IsLoad = false;
 } 
 
+void DecodeObject(const char* pInFile, i32& OutFile);
+void EncodeObject(i32 inFile, const char* pOutFile);
+
 void
-OSR::Engine::DecodeFile(
-	LPCWSTR lpPath,
-	LPLOOP_INFO pLoopInfo
+IOSRDecoder::DecodeObject(
+	const char* pInFile, 
+	i32& OutFile
 )
 {
 	static ThreadSystem threadS = {};
-	static DECODE_STRUCT decodeStruct = { 0 };
-	static WSTRING_PATH szPath = { 0 };
 
-	memcpy(szPath, lpPath, sizeof(WSTRING_PATH));
-
-	decodeStruct.pEngine = this;
-	decodeStruct.lpPath = szPath;
-	decodeStruct.pLoopInfo = pLoopInfo;
+	FILE_TYPE pType = UNKNOWN_TYPE;
+	TRANSCODER_STRUCT pTc = { nullptr };
+	pTc.InputFile = pInFile;
+	pTc.pThis = this;
+	pTc.pNum = &OutFile;
 
 	hStartEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
-	threadS.CreateUserThread(nullptr, DecodeFileProc, &decodeStruct, L"OSR Decoder Worker");
+	threadS.CreateUserThread(nullptr, TranscoderFileProc, &pTc, L"OSR Decoder Worker");
 }
 
-#define TEST_VST 1
-
 void
-OSR::Mixer::CreateMixer(
-	HWND hwnd,
-	LPVOID network
+IOSRDecoder::EncodeObject(
+	i32 inFile,
+	const char* pOutFile
 )
 {
-	pNetwork = (DiscordNetwork*)network;
-	WSTRING_PATH pathToDll = { 0 };
 
-//	eEngine.InitEngine(hwnd);
-//	eEngine.CreateDefaultDevice(600000);
-//
-//#ifdef TEST_VST
-//	pHost = new IWin32VSTHost();
-//	pVSTHost = pHost;
-//	eEngine.pHost = (IWin32VSTHost*)pVSTHost;
-//	if (OSRSUCCEDDED(OpenFileDialog(&pathToDll)))
-//	{
-//		eEngine.pHost->LoadPlugin(pathToDll);
-//		eEngine.pHost->InitPlugin(eEngine.GetOutputInfo()->waveFormat.nSamplesPerSec, eEngine.GetBufferSize() * eEngine.GetOutputInfo()->waveFormat.nChannels);
-//	}
-//#endif
+}
+
+void 
+IOSRDecoder::RemoveObject(i32 Object)
+{
+	pList->unload(Object);
 }
 
 void
-OSR::Mixer::LoadSample(
-	LPCWSTR lpPath
-)
+IOSRMixer::CreateMixer(f64 Delay)
 {
-	osrEngine.DecodeFile(lpPath, &lInfo);
+	pvMixer->start_delay(-1, Delay);
+}
 
-	WIN32_FIND_DATAW findData = { 0 };
-	HANDLE hFind = FindFirstFileW(lpPath, &findData);
-	DWORD DataFile = 0;
+void 
+IOSRMixer::DestroyMixer()
+{
+	pvMixer->close();
+}
 
-	// if file doesn't exist
-	if (hFind && hFind != INVALID_HANDLE_VALUE)
+
+void
+IOSRMixer::RestartMixer(f64 Delay)
+{
+	DestroyMixer();
+	CreateMixer(Delay);
+}
+
+void
+IOSRMixer::OpenPlugin(u32 Track, u32 Effect)
+{
+	if (pvMixer && pvMixer->tracksInfo[Track].pEffectHost[Effect])
 	{
-		int StringSize = WideCharToMultiByte(CP_UTF8, 0, findData.cFileName, -1, nullptr, 0, NULL, NULL);
-		LPSTR lpNewString = nullptr;
-
-		if (StringSize)
-		{
-			// allocate new string at kernel heap
-			lpNewString = (LPSTR)FastAlloc(++StringSize);
-
-			ASSERT2(WideCharToMultiByte(CP_UTF8, 0, findData.cFileName, -1, lpNewString, StringSize, NULL, NULL), L"Can't convert wchar_t to char");
-
-			memcpy(pNetwork->szName, lpNewString, min(StringSize, 96));
-		}
-
-		pNetwork->SetStatus(DiscordNetwork::StatusNumber::OpenedAudio);
-		
-		FREEKERNELHEAP(lpNewString);
-
-		FindClose(hFind);
+		IWin32VSTHost* pHost = (IWin32VSTHost*)pvMixer->tracksInfo[Track].pEffectHost[Effect];
+		pHost->OpenPluginWindow();
 	}
-
-	uPlay = 0;
 }
 
-void
-OSR::Mixer::PlaySample()
+void 
+IOSRMixer::ClosePlugin(u32 Track, u32 Effect)
 {
-	//SampleProc.pEngine = &eEngine;
-	//SampleProc.pLoopInfo = &lInfo;
-	//SampleProc.pSample = nullptr;
-
-	//if (uPlay)
-	//{
-	//	eEngine.RestartDevice(600000);
-	//}
-
-	//WaitForSingleObject(hStartEvent, INFINITE);
-	//eEngine.StartDevice((LPVOID)&SampleProc);
-	//pNetwork->SetStatus(DiscordNetwork::StatusNumber::PlayingAudio);
-
-	//uPlay++;
-}
-
-void
-OSR::Mixer::StopSample()
-{
-	//eEngine.StopDevice();
-	//pNetwork->SetStatus(DiscordNetwork::StatusNumber::OpenedAudio);
-}
-
-void
-OSR::Mixer::SetAudioPosition(f32 Position)
-{
-	//eEngine.SetAudioPosition(Position);
-}
-
-void
-OSR::Mixer::OpenPlugin(bool& isOpen)
-{
-	if (pVSTHost)
+	if (pvMixer && pvMixer->tracksInfo[Track].pEffectHost[Effect])
 	{
-		IVSTHost* pLocalHost = (IVSTHost*)pVSTHost;
-
-		if (!isOpen)
-		{
-			pLocalHost->ClosePluginWindow();
-		}
-		else
-		{
-			pLocalHost->OpenPluginWindow();
-		}
-
-		isOpen = !isOpen;
+		IWin32VSTHost* pHost = (IWin32VSTHost*)pvMixer->tracksInfo[Track].pEffectHost[Effect];
+		pHost->ClosePluginWindow();
 	}
+}
+
+void
+IOSRMixer::AddPlugin(u32 Track, IObject* pPlugin, u32& OutEffect)
+{
+	pvMixer->add_effect(Track, pPlugin, sizeof(IWin32VSTHost), OutEffect);
+}
+
+void
+IOSRMixer::DeletePlugin(u32 Track, u32 Effect)
+{
+	pvMixer->delete_effect(Track, Effect);
+}
+
+void
+IOSRMixer::SetPosition(f32 Position)
+{
+
+}
+
+void
+IOSRMixer::Play()
+{
+	pvMixer->play();
+}
+
+void 
+IOSRMixer::Stop()
+{
+	pvMixer->stop();
 }

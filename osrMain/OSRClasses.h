@@ -15,58 +15,113 @@
 #include "OSRWin32kernel.h"
 #endif
 
-#include "XAudioMain.h"
 #include "LoopList.h"
+#include "MixerBase.h"
+#include "AsyncMixer.h"
 
-namespace OSR
+DWORD DLL_API StartApplication(LPWSTR lpCmdLine);
+
+class IOSREngine : IObject
 {
-	class DLL_API Engine
-	{
-	public:
-		void DecodeFile(LPCWSTR lpPath, LPLOOP_INFO pLoopInfo);
+public:
 
-		LoopList loopList;		
-	};
-
-	class DLL_API Mixer
-	{
-	public:
-		Mixer() { MixerSampleRate = 44100; MixerBufferSize = 2048; }
-		Mixer(u32 SampleRate, u32 BufferSize) { MixerSampleRate = SampleRate; MixerBufferSize = BufferSize; }
-
-		void SetAudioPosition(f32 Position);
-		void OpenPlugin(bool& isOpen);
-		void CreateMixer(HWND hwnd, LPVOID network);
-		void LoadSample(LPCWSTR lpPath);
-		void PlaySample();
-		void StopSample();
-
-	private:
-		LPVOID pVSTHost;
-		DWORD LoopNumber; 
-		OSR::Engine osrEngine;
-		OSRSample*  CurrentSample;
-		u32 MixerSampleRate;
-		u32 MixerBufferSize;
-	};
-
-	class DLL_API UserInterface
-	{
-	public:
-		HWND GetCurrentHwnd() { return MainHwnd; }
-		OSRCODE CreateMainWindow();
-		//VOID MenuBeginPopup(LPCSTR Name);
-		//VOID MenuEndPopup(LPCSTR Name);
-		VOID CreateApplicationMenu();
-
-	private:
-		HWND MainHwnd;
-	};
+	IOSRFileSystem* pFileSystem;
 };
 
-typedef struct
+class IOSRDecoder : IObject
 {
-	OSR::Engine* pEngine;
-	LPCWSTR lpPath;
-	LPLOOP_INFO pLoopInfo;
-} DECODE_STRUCT;
+public:
+	IOSRDecoder()
+	{
+		pList = new IWin32SoundList();
+	}
+
+	IOSRDecoder(IObject* pList1)
+	{
+		pList = (ISoundList*)pList1;
+	}
+
+	void DecodeObject(const char* pInFile, i32& OutFile);
+	void EncodeObject(i32 inFile, const char* pOutFile);
+	void RemoveObject(i32 Object);
+
+	void Release() override
+	{
+		_RELEASE(pList);
+		delete this;
+	}
+
+	IObject* CloneObject() override
+	{
+		IObject* pList1 = pList->CloneObject();
+		return new IOSRDecoder(pList1);
+	}
+
+	ISoundList* pList;
+	i32 NumberOfTrack;
+};
+
+class IOSRMixer : IObject
+{
+public:
+	IOSRMixer()
+	{
+		pDecoder = new IOSRDecoder();
+		pvMixer = new IMixerAsync();
+	}
+
+	IOSRMixer(IObject* pDecoder1, IObject* pMixer1)
+	{
+		pDecoder = (IOSRDecoder*)pDecoder1;
+		pvMixer = (IMixerInterface*)pMixer1;
+	}
+
+	void SetPosition(f32 Position);
+	void OpenPlugin(u32 Track, u32 Effect);
+	void ClosePlugin(u32 Track, u32 Effect);
+	void AddPlugin(u32 Track, IObject* pPlugin, u32& OutEffect);
+	void DeletePlugin(u32 Track, u32 Effect);
+	void CreateMixer(f64 Delay);
+	void RestartMixer(f64 Delay);
+	void DestroyMixer();
+	void Play();
+	void Stop();
+
+	void Release() override
+	{
+		_RELEASE(pDecoder);
+		_RELEASE(pvMixer);
+		delete this;
+	}
+
+	IObject* CloneObject() override
+	{
+		IObject* pDecoder1 = pDecoder->CloneObject();
+		IObject* pMixer1 = pvMixer->CloneObject();
+
+		return new IOSRMixer(pDecoder1, pMixer1);
+	}
+
+	IOSRDecoder* pDecoder;
+	IMixerInterface* pvMixer;
+};
+
+class IOSRUI : IObject
+{
+public:
+	OSRCODE CreateMainWindow();
+
+	void Release() override
+	{
+		if (WindowHandle) { DestroyWindow(WindowHandle); }
+		delete this;
+	}
+
+	IObject* CloneObject() override
+	{
+		return nullptr;
+	}
+
+
+	HWND WindowHandle;
+};

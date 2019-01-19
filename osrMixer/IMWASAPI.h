@@ -17,7 +17,6 @@
 #include <initguid.h>
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
-#include "OSRVST.h"
 #include "AsyncReader.h"
 #include "MixerBase.h"
 

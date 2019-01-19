@@ -44,6 +44,7 @@ public:
 	ID3D11DeviceContext* m_pContext = nullptr;
 	ID3D11RenderTargetView* m_pRenderTargetView = nullptr;
 	ID3D11Buffer*	m_pDisplaySizeBuffer = nullptr;
+
 private:
 	ID3D11Texture2D* pTexture1 = nullptr;
 	ID3D11Texture2D* pTexture2 = nullptr;

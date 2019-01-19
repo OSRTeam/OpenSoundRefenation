@@ -66,7 +66,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>release;\include;$(SolutionDir)\osrMain;$(SolutionDir)\osrKernel;$(SolutionDir)\osrMixer;$(SolutionDir)\osrDecoder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>release;\include;$(SolutionDir)\osrMain;$(SolutionDir)\osrKernel;$(SolutionDir)\osrMixer;$(SolutionDir)\osrDecoder;$(SolutionDir)\include\;$(SolutionDir)\include\soxr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>release\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -126,7 +126,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>release;\include;$(SolutionDir)\osrMain;$(SolutionDir)\osrKernel;$(SolutionDir)\osrMixer;$(SolutionDir)\osrDecoder;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>release;\include;$(SolutionDir)\osrMain;$(SolutionDir)\osrKernel;$(SolutionDir)\osrMixer;$(SolutionDir)\osrDecoder;$(SolutionDir)\include\;$(SolutionDir)\include\soxr\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>debug\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>

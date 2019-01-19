@@ -128,7 +128,6 @@ IMFDecoder::DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t& OutS
 		DWORD dwLocalAudioDataLength = 0;
 		DWORD dwSampleCount = 0;
 		DWORD flags = 0;
-		WORD* pD = nullptr;
 
 		size_t Bitrate = pWave->nChannels + pWave->nAvgBytesPerSec + (pWave->wBitsPerSample / 8);
 		size_t OutSize = Bitrate * (uDuration / 1000) + Bitrate * (uDuration % 1000);
@@ -173,11 +172,44 @@ IMFDecoder::DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t& OutS
 
 		OutSize = lpData.size();
 		pOutFile = FastAlloc(OutSize * 2);
-		pD = (WORD*)&lpData[0];
-		
-		for (size_t i = 0; i < OutSize; i++)
+
+		switch (waveFormat.wBitsPerSample)
 		{
-			((f32*)(pOutFile))[i] = i16tof32(pD[i]);
+		case 8:
+		{
+			BYTE* pD = nullptr;
+			pD = (BYTE*)&lpData[0];
+
+			for (size_t i = 0; i < OutSize; i++)
+			{
+				((f32*)(pOutFile))[i] = i16tof32(pD[i]);
+			}
+		}
+		break;
+		case 16:
+		{
+			WORD* pD = nullptr;
+			pD = (WORD*)&lpData[0];
+
+			for (size_t i = 0; i < OutSize; i++)
+			{
+				((f32*)(pOutFile))[i] = i16tof32(pD[i]);
+			}
+		}
+		break;
+		case 24:
+		{
+			i24* pD = nullptr;
+			pD = (i24*)&lpData[0];
+
+			for (size_t i = 0; i < OutSize; i++)
+			{
+				((f32*)(pOutFile))[i] = i24tof32(pD[i]);
+			}
+		}
+		break;
+		default:
+			break;
 		}
 
 		waveFormat.wFormatTag = 3;

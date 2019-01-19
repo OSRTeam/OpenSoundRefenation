@@ -118,14 +118,7 @@ WaveOutThreadProc(LPVOID pData)
 
 			if (pProc->pEngine->pHost)
 			{
-				ProcessAudio(
-					Sample->pOutputBuffer,
-					Sample->pOutputBuffer,
-					Sample->SampleRateOutput,
-					Sample->BufferSizeOutput,
-					Sample->ChannelsOutput,
-					(IWin32VSTHost*)pProc->pEngine->pHost
-				);
+				
 			}
 			
 			Sample->ConvertToPlay(AudioHeader.lpData, 16);

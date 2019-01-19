@@ -11,55 +11,7 @@
 #pragma once
 #include "OSR.h"
 #include "LoopList.h"
-#include "OSRVST.h"
 #include "soxr\src\soxr.h"
-
-inline
-void
-ProcessAudio(
-	float** pInput,
-	float** pOutput,
-	DWORD SampleRate,
-	DWORD BufferSize,
-	DWORD Channels,
-	IWin32VSTHost* pHost
-)
-{
-	if (!pHost || !pHost->pEffect) { return;}
-
-	float* pCustomOutput[16] = { nullptr };
-	float* pCustomInput[16] = { nullptr };
-
-	for (size_t i = 0; i < Channels * 2; i++)
-	{
-		pCustomOutput[i] = (float*)FastAlloc(BufferSize * sizeof(f32));
-		pCustomInput[i] = (float*)FastAlloc(BufferSize * sizeof(f32));
-
-#ifndef WIN32
-		memset(pCustomInput[i], 0, BufferSize * sizeof(f32));
-		memset(pCustomOutput[i], 0, BufferSize * sizeof(f32));
-#endif
-	}
-
-	for (size_t i = 0; i < Channels; i++)
-	{
-		memcpy(pCustomInput[i], pInput[i], BufferSize * sizeof(f32));
-	}
-
-	// process function
-	pHost->ProcessAudio(pCustomInput, pCustomOutput, BufferSize / Channels);
-
-	for (size_t i = 0; i < Channels; i++)
-	{
-		memcpy(pOutput[i], pCustomOutput[i], BufferSize * sizeof(f32));
-	}
-
-	for (size_t i = 0; i < Channels * 2; i++)
-	{
-		FREEKERNELHEAP(pCustomOutput[i]);
-		FREEKERNELHEAP(pCustomInput[i]);
-	}
-}
 
 inline
 void

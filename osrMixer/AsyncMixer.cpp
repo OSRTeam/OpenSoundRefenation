@@ -10,6 +10,7 @@
 *********************************************************/
 #include "stdafx.h"
 #include "AsyncMixer.h"
+#include "OSRVST.h"
 
 DWORD
 WINAPIV
@@ -22,6 +23,8 @@ AsyncMixerThreadProc(LPVOID pData)
 	HANDLE hArray[] = { pMixer->hReleaseThread, pMixer->hWaitThread, pMixer->hStartThread };
 	WAVEFORMATEX waveFormat = ConvertToWaveFormat(pMixer->HostsInfo[1].FormatType);
 	size_t BufSize = pMixer->HostsInfo[1].BufferSize;
+
+	if (!BufSize) { return 0; };
 	u8* pOutBuffer = (u8*)FastAlloc(BufSize);
 	float* pInVstData[16] = { nullptr };
 	float* pOutVstData[16] = { nullptr };

@@ -26,6 +26,7 @@ public:
 
 class DLL_API IWin32SoundList : public ISoundList
 {
+public:
 	IWin32SoundList()
 	{
 		pFileSystem = new IOSRWin32FileSystem();

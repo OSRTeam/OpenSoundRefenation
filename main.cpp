@@ -20,8 +20,6 @@ wWinMain(
 	_In_ int nShowCmd
 )
 {
-	OSR::UserInterface Userinterface;
-
 	UNREFERENCED_PARAMETER(hInstance);
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(nShowCmd);
@@ -30,7 +28,7 @@ wWinMain(
 
 	// critical section
 	InitApplication();
-	Userinterface.CreateMainWindow();
+	StartApplication(lpCmdLine);
 
 	return TRUE;
 }

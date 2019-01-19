@@ -15,14 +15,14 @@
 
 struct DropTarget : public IDropTarget
 {
-	DropTarget() : Counter(0), pHelper(nullptr), pObject(nullptr), Window(NULL), OutMixer(nullptr)
+	DropTarget() : Counter(0), pHelper(nullptr), pObject(nullptr), Window(NULL), pMixer(nullptr)
 	{
 		X = -1;
 		Y = -1;
 		DragAndDropRegionNumber = -1;
 	}
 
-	VOID AddMixer(OSR::Mixer* pMixer) { OutMixer = pMixer; };
+	VOID AddMixer(IOSRMixer* pMixer1) { pMixer = pMixer1; };
 	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override;
 	ULONG STDMETHODCALLTYPE AddRef() override;
 	ULONG STDMETHODCALLTYPE Release() override;
@@ -32,10 +32,10 @@ struct DropTarget : public IDropTarget
 	HRESULT STDMETHODCALLTYPE Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override;
 
 	LONG Counter;
+	IOSRMixer* pMixer;
 	IDropTargetHelper* pHelper;
 	IDataObject* pObject;
 	HWND Window;
-	OSR::Mixer* OutMixer;
 
 	i32 X;
 	i32 Y;

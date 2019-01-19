@@ -546,7 +546,7 @@ PluginProc(
 	}
 	case WM_PAINT:
 	{
-		AEffect* pCustomEffect = (AEffect*)GetWindowLongW(hWnd, -21);
+		AEffect* pCustomEffect = (AEffect*)GetWindowLongPtrW(hWnd, -21);
 		ERect* rec = nullptr;
 		static RECT PluginRc = { 0 };
 		RECT winRect = { 0 };
