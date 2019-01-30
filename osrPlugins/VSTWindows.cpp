@@ -15,8 +15,36 @@ float fBlockSize = 0.f;
 float fSampleRate = 0.f;
 
 typedef AEffect* (VSTCALLBACK *PluginMain) (audioMasterCallback audioMaster);
+HWND ActiveWindow = NULL;
 
-PluginVst2xId 
+void
+ProcessScale(int Width, int Height)
+{
+	IWin32VSTHost* pHostEffect = (IWin32VSTHost*)GetWindowLongPtrW(ActiveWindow, -21);
+	AEffect* pCustomEffect = (AEffect*)pHostEffect->pEffect;
+	ERect* rec = nullptr;
+	static RECT PluginRc = { 0 };
+	RECT winRect = { 0 };
+
+	GetWindowRect(ActiveWindow, &winRect);
+	if (pCustomEffect)
+	{
+		pCustomEffect->dispatcher(pCustomEffect, effEditGetRect, 1, 0, &rec, 0);
+	}
+
+	if (PluginRc.bottom != rec->bottom || PluginRc.left != rec->left || PluginRc.right != rec->right || PluginRc.top != rec->top)
+	{
+		PluginRc.bottom = rec->bottom;
+		PluginRc.left = rec->left;
+		PluginRc.right = rec->right;
+		PluginRc.top = rec->top;
+
+		AdjustWindowRectEx(&PluginRc, GetWindowLongPtrW(ActiveWindow, GWL_STYLE), NULL, GetWindowLongPtrW(ActiveWindow, GWL_EXSTYLE));
+		MoveWindow(ActiveWindow, winRect.left, winRect.top, PluginRc.right - PluginRc.left, PluginRc.bottom - PluginRc.top, TRUE);
+	}
+}
+
+PluginVst2xId  
 NewPluginVst2xId()
 {
 	PluginVst2xId pluginVst2xId = (PluginVst2xId)FastAlloc(sizeof(PluginVst2xIdMembers));
@@ -166,6 +194,7 @@ VSTMasterAudioCallback(
 		result = 1;
 		break;
 	case audioMasterSizeWindow:
+		ProcessScale(index, value);
 		result = 0;
 		break;
 	case audioMasterProcessEvents: 
@@ -538,39 +567,17 @@ PluginProc(
 	switch (msg)
 	{
 	case WM_DESTROY:
+		//ActiveWindow = NULL;
 		return 0;
 	case WM_SIZE:
 	{
 		// we can't manually set rect by windows messages at VST2
 		return 0;
 	}
-	case WM_PAINT:
-	{
-		AEffect* pCustomEffect = (AEffect*)GetWindowLongPtrW(hWnd, -21);
-		ERect* rec = nullptr;
-		static RECT PluginRc = { 0 };
-		RECT winRect = { 0 };
-
-		GetWindowRect(hWnd, &winRect);
-		if (pCustomEffect)
-		{
-			pCustomEffect->dispatcher(pCustomEffect, effEditGetRect, 1, 0, &rec, 0);
-		}
-
-		if (PluginRc.bottom != rec->bottom || PluginRc.left != rec->left || PluginRc.right != rec->right || PluginRc.top != rec->top)
-		{
-			PluginRc.bottom = rec->bottom;
-			PluginRc.left = rec->left;
-			PluginRc.right = rec->right;
-			PluginRc.top = rec->top;
-
-			AdjustWindowRectEx(&PluginRc, GetWindowLongPtrW(hWnd, GWL_STYLE), NULL, GetWindowLongPtrW(hWnd, GWL_EXSTYLE));
-			MoveWindow(hWnd, winRect.left, winRect.top, PluginRc.right - PluginRc.left, PluginRc.bottom - PluginRc.top, TRUE);
-		}
-	}
 	//#TODO: close messages after running
 	case WM_CLOSE:
 	{
+		//ActiveWindow = NULL;
 	}
 	default:
 		break;
@@ -607,6 +614,8 @@ IWin32VSTHost::CreatePluginWindow()
 		wc.hInstance,
 		nullptr
 	);
+
+	ActiveWindow = (HWND)PluginWindowHandle;
 }
 
 VOID

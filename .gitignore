@@ -179,3 +179,9 @@ x64/Debug/vc141.pdb
 /osrDecoder/x64/Debug/osrDecoder.tlog
 /osrMain/x64/Debug/osrMain.tlog
 /x64/Debug/OpenSoun.3BCAFC30.tlog
+/osrDecoder/x64/Release
+/osrKernel/x64/Release
+/osrMain/x64/Release
+/osrMixer/x64/Release
+/osrPlugins/x64
+/release

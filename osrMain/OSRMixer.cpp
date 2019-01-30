@@ -157,33 +157,40 @@ PlayProc(LPVOID pProc)
 		pMixer->pvMixer->play();
 	}
 
+	WaitForSingleObject(pMixer->pvMixer->hStartThread, INFINITE);
+
 	while (play)
 	{
 		switch (WaitForMultipleObjects(2, hArray, FALSE, INFINITE))
 		{
 		case WAIT_OBJECT_0:
-			if (!ToEndFileSize && !SamplePosition) 
+			if (WaitForSingleObject(pMixer->pvMixer->hWaitThread, 1) == WAIT_TIMEOUT)
 			{
-				ToEndFileSize = pMixer->pDecoder->pList->lpFileInfo[pMixer->pDecoder->NumberOfTrack].FileSize;
-			}
+				if (!ToEndFileSize && !SamplePosition)
+				{
+					ToEndFileSize = pMixer->pDecoder->pList->lpFileInfo[pMixer->pDecoder->NumberOfTrack].FileSize;
+				}
 
-			pData = (void*)ptrdiff_t(pMixer->pDecoder->pList->lpFileInfo[pMixer->pDecoder->NumberOfTrack].pSampleInfo->pSample + SamplePosition);
+				pData = (void*)ptrdiff_t(pMixer->pDecoder->pList->lpFileInfo[pMixer->pDecoder->NumberOfTrack].pSampleInfo->pSample + SamplePosition);
 
-			SamplePosition += (BufSize * sizeof(f32));
-			ToEndFileSize -= (BufSize * sizeof(f32));
+				SamplePosition += (BufSize * sizeof(f32));
+				ToEndFileSize -= (BufSize * sizeof(f32));
 
-			if (ToEndFileSize <= 0)
-			{
-				play = false;
-			}
+				if (ToEndFileSize <= 0)
+				{
+					play = false;
+				}
 
-			if (ToEndFileSize < BufSize * sizeof(f32))
-			{
-				pMixer->pvMixer->put_data(pMixer->TrackNum, pData, ToEndFileSize);
-			}
-			else
-			{
-				pMixer->pvMixer->put_data(pMixer->TrackNum, pData, BufSize * sizeof(f32));
+				if (ToEndFileSize < BufSize * sizeof(f32))
+				{
+					pMixer->pvMixer->put_data(pMixer->TrackNum, pData, ToEndFileSize);
+				}
+				else
+				{
+					pMixer->pvMixer->put_data(pMixer->TrackNum, pData, BufSize * sizeof(f32));
+				}
+
+				SetEvent(pMixer->pvMixer->hWaitThread);
 			}
 			break;
 		case WAIT_OBJECT_0 + 1:

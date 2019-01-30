@@ -28,7 +28,5 @@ wWinMain(
 
 	// critical section
 	InitApplication();
-	StartApplication(lpCmdLine);
-
-	return TRUE;
+	return StartApplication(lpCmdLine);
 }

@@ -13,17 +13,17 @@
 #include "../resource1.h"
 #include "DiscordPart.h"
 #include "DragAndDrop.h"
+#include "OSRVST.h"
 #pragma comment(lib, "Winmm.lib")
 
-DX11Render dx11Renderer;
-VUMeter vMeter;
 bool Window_Flag_Resizeing = false;
 DLL_API bool IsBlur = false;
 DLL_API bool IsLoad = false;
 DLL_API float ProgressBartest = 0.0;
+DX11Render dx11Renderer = {};
+DropTarget dropTarget = {};
 DiscordNetwork disc = {};
-
-DropTarget dropTarget;
+VUMeter vMeter = {};
 
 VOID 
 ImDrawCallbackPostBlur(
@@ -122,9 +122,9 @@ CycleFunc()
 	float R = 0.8*abs(cos(mnmm + 1.0)*sin(mnmm*0.1));
 	static float LS = 0.0f;
 	static float RS = 0.0f;
+	static bool peakdetectL = false;
 	LS = max(LS, L);
 	RS = max(RS, R);
-	static bool peakdetectL = false;
 	if (L > 0.98f) peakdetectL = true;
 
 	ImGui_ImplDX11_NewFrame();
@@ -142,7 +142,6 @@ CycleFunc()
 		vMeter.DrawLevels(RegionAvail.x - 30, RegionAvail.y - 50.0, L, R, LS, RS, peakdetectL, false);
 	}
 	ImGui::End();
-	
 
 	mnmm += 0.1;
 	LS *= 0.995f;
@@ -209,6 +208,22 @@ CycleFunc()
 			}
 		}
 
+		if (ImGui::Button("vst host"))
+		{
+			static IVSTHost* pHost = new IWin32VSTHost();
+			static bool isFirst = true;
+
+			if (isFirst)
+			{
+				pHost->LoadPlugin(L"I:\\VSTPlugins\\SPAN.dll");
+				//pHost->LoadPlugin(L"I:\\VSTPlugins\\SDRR2 x64.dll");
+				pHost->InitPlugin(44100, 512);
+				isFirst = false;
+			}
+
+			Sleep(0);
+		}
+
 		ImGui::SameLine();
 		ImGui::Text("counter = %d", counter);
 
@@ -216,7 +231,6 @@ CycleFunc()
 		ImGui::End();
 	}
 	
-
 	ImGuiIO& iomain = ImGui::GetIO();
 	static ImVec2 LoadMaxContext = ImVec2(0, 0);
 	ImGui::SetNextWindowPos(ImVec2(iomain.DisplaySize.x / 2 - LoadMaxContext.x/2, iomain.DisplaySize.y / 2 - LoadMaxContext.y/2));
@@ -265,8 +279,7 @@ WndProc(
 	LPARAM lParam
 )
 {
-	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-		return true;
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) { return TRUE; }
 
 	switch (msg)
 	{
@@ -300,7 +313,7 @@ WndProc(
 			dx11Renderer.m_pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &dx11Renderer.m_pRenderTargetView);
 			_RELEASE(pBackBuffer);
 		}
-		if (wParam == SIZE_MINIMIZED)
+		else
 		{
 			Sleep(1);
 		}
@@ -320,53 +333,63 @@ WndProc(
 
 STRING_PATH szPath = { NULL };
 
-DWORD StartApplication(LPWSTR lpCmdLine)
+DWORD 
+StartApplication(
+	LPWSTR lpCmdLine
+)
 {
+	LPWSTR lpPathTemp = nullptr;
 	MSG msg = { nullptr };
 	IOSRUI* pUI = new IOSRUI();
 	IOSRMixer* pMixer = new IOSRMixer();
-	
-	// set begin for multimedia period (needy for Sleep(16) or lower sleep time)
+	OSRCODE sCode = OSR_SUCCESS;
+
+	// set begin for multimedia period
 	timeBeginPeriod(1);
 	MFStartup(MF_VERSION);
 
+	// init static string with application path
+	GetApplicationDirectory(&lpPathTemp);
+
+	sCode = pUI->CreateMainWindow();
+	if (OSRSUCCEDDED(sCode))
 	{
-		// init static string with application path
-		LPWSTR lpPathe = nullptr;
-		GetApplicationDirectory(&lpPathe);
-	}
+		// set pointer to mixer how window long var
+		SetWindowLongPtr((HWND)pUI->WindowHandle, -21, (LONG_PTR)pMixer);
 
-	pUI->CreateMainWindow();
+		dropTarget.Window = pUI->WindowHandle;
+		dropTarget.AddMixer(pMixer);
+		RegisterDragDrop(pUI->WindowHandle, &dropTarget);
 
-	SetWindowLongPtr((HWND)pUI->WindowHandle, -21, (LONG_PTR)pMixer);
+		// init discord RPC
+		disc.Init();
+		disc.SetStatus(DiscordNetwork::StatusNumber::Waiting);
 
-	dropTarget.Window = pUI->WindowHandle;
-	dropTarget.AddMixer(pMixer);
-	RegisterDragDrop(pUI->WindowHandle, &dropTarget);
-
-	disc.Init();
-	disc.SetStatus(DiscordNetwork::StatusNumber::Waiting);
-
-	// Main loop
-	while (msg.message != WM_QUIT)
-	{
-		if (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
+		// translate message loop
+		while (msg.message != WM_QUIT)
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			continue;
-		}
+			if (PeekMessageW(&msg, nullptr, 0U, 0U, PM_REMOVE))
+			{
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+				continue;
+			}
 
-		Sleep(1);
-		CycleFunc();
-		//g_pSwapChain->Present(0, 0); // Present without vsync
+			Sleep(1);
+			CycleFunc();
+			//g_pSwapChain->Present(0, 0); // Present without vsync
+		}
+	}
+	else
+	{
+		THROW2(L"Can't init main application window");
 	}
 
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
-	// set end for period (in 1/10 cases we can get BSoD if failed) 
+	// set end for period (in 1/10 cases we can get BSoD if function failed) 
 	timeEndPeriod(1);
 	MFShutdown();
 
@@ -382,12 +405,13 @@ IOSRUI::CreateMainWindow()
 	wc.hIconSm = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_OSRSMALL));
 	RegisterClassExW(&wc);
 
+	OSRCODE sCode = OSR_SUCCESS;
 	RECT rec = { 0, 0, 640, 360 };
 	AdjustWindowRectEx(&rec, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_APPWINDOW);
 
 	WindowHandle = CreateWindowW(
 		L"OSR_DAW",
-		L"Open Sound Refenation 0.51A",
+		L"Open Sound Refenation 0.52A",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -399,38 +423,44 @@ IOSRUI::CreateMainWindow()
 		nullptr
 	);
 
-	if (OSRFAILED(dx11Renderer.CreateRenderWindow(WindowHandle)))
+	sCode = dx11Renderer.CreateRenderWindow(WindowHandle);
+	if (OSRFAILED(sCode)) 
 	{
-		THROW2(L"Can't create render window");
+		return sCode;
 	}
 
-	ShowWindow(WindowHandle, SW_SHOWDEFAULT);
-	UpdateWindow(WindowHandle);
-
+	if (ShowWindow(WindowHandle, SW_SHOWDEFAULT))
+	{
+		UpdateWindow(WindowHandle);
+	}
+	
 	TaskbarValue** pTask = GetTaskbarPointer();
 	*pTask = new TaskbarValue(WindowHandle);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->Clear();
 
-	GetCurrentDirectoryA(sizeof(STRING_PATH), szPath);
-	snprintf(szPath, sizeof(STRING_PATH), "%s%s", szPath, "\\arimo_reg.ttf"); //-V541
-
-	ImFont* font = io.Fonts->AddFontFromFileTTF(szPath, 16.0f);
-	if (font) 
+	if (GetCurrentDirectoryA(sizeof(STRING_PATH), szPath))
 	{
-		io.FontDefault = font; 
-	}
-	else 
-	{ 
-		io.Fonts->AddFontDefault();
-	}
-	io.Fonts->Build();
+		io.Fonts->Clear();
+		snprintf(szPath, sizeof(STRING_PATH), "%s%s", szPath, "\\arimo_reg.ttf"); //-V541
 
-	ImGui_ImplWin32_Init(WindowHandle);
-	ImGui_ImplDX11_Init(dx11Renderer.m_pDevice, dx11Renderer.m_pContext);
+		ImFont* font = io.Fonts->AddFontFromFileTTF(szPath, 16.0f);
+		if (font)
+		{
+			io.FontDefault = font;
+		}
+		else
+		{
+			io.Fonts->AddFontDefault();
+		}
+
+		io.Fonts->Build();
+	}
+
+	if (!ImGui_ImplWin32_Init(WindowHandle)) { return KERN_OSR_BAD_ALLOC; }
+	if (!ImGui_ImplDX11_Init(dx11Renderer.m_pDevice, dx11Renderer.m_pContext)) { return DX_OSR_BAD_HW; }	//#TODO: run DX9 graphics implementation on failed
 
 	// Setup style
 	ImGui::StyleColorsDark();

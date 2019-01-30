@@ -75,7 +75,7 @@ public:
 	IOSRMixer(IObject* pDecoder1, IObject* pMixer1)
 	{
 		pDecoder = (IOSRDecoder*)pDecoder1;
-		pvMixer = (IMixerInterface*)pMixer1;
+		pvMixer = (IMixerAsync*)pMixer1;
 	}
 
 	void SetPosition(f32 Position);
@@ -105,7 +105,7 @@ public:
 	}
 
 	IOSRDecoder* pDecoder;
-	IMixerInterface* pvMixer;
+	IMixerAsync* pvMixer;
 	u32 TrackNum;
 	bool isPlay = false;
 	OSRHandle StartHandle;

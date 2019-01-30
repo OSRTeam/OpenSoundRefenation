@@ -371,6 +371,157 @@ constexpr unsigned int FOURCC_MIDI_SAMPLE				= MAKEFOURCC('s', 'm', 'p', 'l');
 constexpr unsigned int FOURCC_XWMA_DPDS					= MAKEFOURCC('d', 'p', 'd', 's');
 constexpr unsigned int FOURCC_XMA_SEEK					= MAKEFOURCC('s', 'e', 'e', 'k');
 
+class MultiString
+{
+	MultiString(const WideChar* StringUTF16)
+	{
+		// we need to get size of data to allocate
+		StringSize = WideCharToMultiByte(CP_UTF8, 0, StringUTF16, -1, nullptr, 0, nullptr, nullptr);
+		String = nullptr;
+
+		if (StringSize && StringSize < sizeof(STRING256))
+		{
+			// allocate new string at kernel heap
+			String = (LPSTR)FastAlloc(++StringSize);
+
+			// convert to UTF-8
+			WideCharToMultiByte(CP_UTF8, 0, StringUTF16, -1, String, StringSize, nullptr, nullptr);
+		}
+	}
+
+	MultiString(const char* StringUTF8)
+	{
+		// allocate new string at kernel heap
+		StringSize = strlen(StringUTF8);
+		String = (LPSTR)FastAlloc(++StringSize);
+
+		// copy string to local string
+		strcpy_s(String, StringSize, StringUTF8);
+	}
+
+	MultiString()
+	{
+
+	}
+
+	MultiString& operator=(const MultiString& osrString)
+	{
+		StringSize = osrString.StringSize;
+		String = (LPSTR)FastAlloc(StringSize);
+		strcpy_s(String, StringSize, osrString.String);
+	}
+
+	MultiString& operator=(const WideChar* StringUTF16)
+	{
+		// we need to get size of data to allocate
+		StringSize = WideCharToMultiByte(CP_UTF8, 0, StringUTF16, -1, nullptr, 0, nullptr, nullptr);
+		String = nullptr;
+
+		if (StringSize && StringSize < sizeof(STRING256))
+		{
+			// allocate new string at kernel heap
+			String = (LPSTR)FastAlloc(++StringSize);
+
+			// convert to UTF-8
+			WideCharToMultiByte(CP_UTF8, 0, StringUTF16, -1, String, StringSize, nullptr, nullptr);
+		}
+	}
+
+	MultiString& operator=(const char* StringUTF8)
+	{
+		// allocate new string at kernel heap
+		StringSize = strlen(StringUTF8);
+		String = (LPSTR)FastAlloc(++StringSize);
+
+		// copy string to local string
+		strcpy_s(String, StringSize, StringUTF8);
+	}
+
+	~MultiString()
+	{ 
+		FREEKERNELHEAP(String);
+	}
+
+	size_t copy_to()
+	{
+
+	}
+
+	size_t copy_from()
+	{
+
+	}
+
+	void clear()
+	{
+
+	}
+
+	void move()
+	{
+
+	}
+
+	void push_back(char Symbol)
+	{
+		char* pLocal = nullptr;
+		size_t LocalStringSize = 0;
+
+		// if allocated space smaller than null-terminated string + 1 symbol
+		if (((LocalStringSize = strlen(String) + 2)) > StringSize)
+		{
+			pLocal = (char*)FastAlloc(StringSize + 1);
+			memset(pLocal, 0, StringSize + 1);		// for null-terminated string
+			memcpy(pLocal, String, StringSize);
+			pLocal[StringSize - 1] = Symbol;
+
+			FREEKERNELHEAP(String);
+
+			String = pLocal;
+			StringSize++;
+		}
+		else
+		{
+			
+		}
+	}
+
+	void reserve(size_t size)		// in bytes
+	{
+		char* pLocal = nullptr;
+
+		if (size > StringSize)
+		{
+			pLocal = (char*)FastAlloc(size);
+
+			if (String)
+			{
+				memcpy(pLocal, String, StringSize);
+				FREEKERNELHEAP(String);
+			}
+
+			String = pLocal;
+			StringSize = size;
+		}
+	}
+
+private:
+	char* String;
+	size_t StringSize;
+};
+
+class OSRString
+{
+public:
+	using StringStruct = struct
+	{
+
+	};
+
+	using StringVector = std::vector<StringStruct>;
+};
+
+
 #ifdef WIN32
 #include <Shobjidl.h>
 class TaskbarValue

@@ -79,13 +79,16 @@ WASAPIThreadProc(
 	pInterface->thread.LeaveSection();
 
 	WSTRING256 szStringName = { 0 };
-	int Size1 = MultiByteToWideChar(CP_UTF8, 0, pInterface->OutputHost.DeviceName, strlen(pInterface->OutputHost.DeviceName), szStringName, 256);
+	WSTRING512 szStringName2 = { 0 };
+	int Size1 = MultiByteToWideChar(CP_UTF8, 0, pInterface->OutputHost.DeviceName, strlen(pInterface->OutputHost.DeviceName), szStringName, 512);
 
 	if (Size1)
 	{
-		_snwprintf_s(szStringName, 256, L"### Current output device: %s\nHost buffer: %u", szStringName, BufferSize);
-		WMSG_LOG(szStringName);
+		_snwprintf_s(szStringName2, 512, L"### Current output device: %s\nHost buffer: %u", szStringName, BufferSize);
+		WMSG_LOG(szStringName2);
 	}
+
+	SetEvent(hArray[2]);
 
 	while (isPlaying)
 	{

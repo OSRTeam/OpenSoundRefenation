@@ -11,7 +11,7 @@
 //	BOOL isFind = TRUE;
 //	WIN32_FIND_DATAW findData = { 0 };
 //	HANDLE hFind = FindFirstFileW(lpPluginFolder, &findData);
-//
+//  
 //	if (hFind)
 //	{
 //		while (isFind)

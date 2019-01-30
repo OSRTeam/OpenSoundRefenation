@@ -15,7 +15,7 @@
     <ProjectGuid>{AE802C47-E948-4269-ADE3-C4F1E76EC5A0}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>osrMixer</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -66,7 +66,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\debug\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;dxguid.lib;%(AdditionalDependencies);libsoxr-1.lib</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;libsoxr-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -90,8 +90,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)\osrMixer.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)\release\;$(SolutionDir)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;%(AdditionalDependencies);libsoxr-1.lib</AdditionalDependencies>
+      <AdditionalDependencies>osrDecoder.lib;osrPlugins.lib;osrKernel.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;winmm.lib;dsound.lib;avrt.lib;libsoxr-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AsyncMixer.h" />

@@ -303,6 +303,7 @@ public:
 	virtual void ReadSize(OSRHandle& Handle, size_t& SizeToRead, void*& pOutFile) = 0;
 	virtual void Write(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) = 0;
 
+	virtual void ListFolderFiles(const char* FolderPath, const char* FileType, STRING512* OutFiles, size_t CountFiles) = 0;
 	virtual void GetPathUTF8(OSRHandle& OutHandle, const char*& OutString, size_t& OutStringSize) = 0;
 	virtual FILE_TYPE IsAudio(const char* PathToFile) = 0;
 
@@ -519,6 +520,59 @@ public:
 			CloseHandle(Handle);
 			Handle = nullptr;
 			return;
+		}
+	}
+
+	void ListFolderFiles(const char* FolderPath, const char* FileType, STRING512* OutFiles, size_t CountFiles) override
+	{
+		WSTRING_PATH szPath = { 0 };
+		STRING512 PathTemp = { 0 };
+		WSTRING64 szType = { 0 };
+		size_t cb = CountFiles;
+		size_t u = 0;
+
+		if (FileType)
+		{
+			for (size_t i = 0; i < strlen(FileType); i++)
+			{
+				szType[i] = FileType[i];
+			}
+
+			if (MultiByteToWideChar(CP_UTF8, 0, FolderPath, strlen(FolderPath), szPath, sizeof(WSTRING_PATH)))
+			{
+				size_t Cycle = 0;
+				BOOL isFind = TRUE;
+				WIN32_FIND_DATAW findData = { 0 };
+				HANDLE hFind = FindFirstFileW(szPath, &findData);
+
+				if (hFind)
+				{
+					if (!cb) { cb = 100; }
+
+					OutFiles = (STRING512*)FastAlloc(sizeof(STRING512) * cb);
+
+					while (isFind)
+					{
+						isFind = FindNextFileW(hFind, &findData);
+						LPCWSTR FileType = (findData.cFileName + (wcslen(szPath) - (wcslen(szType) - 1)));
+
+						if (!wcscmp(FileType, szType) && Cycle < cb)
+						{
+							if (WideCharToMultiByte(CP_UTF8, 0, findData.cFileName, wcslen(findData.cFileName), PathTemp, 512, nullptr, nullptr))
+							{
+								memcpy(OutFiles[Cycle], PathTemp, 512);
+								Cycle++;
+							}
+						}
+
+						u++;
+					}
+
+					FindClose(hFind);
+
+					Cycle++;
+				}
+			}
 		}
 	}
 
@@ -836,7 +890,11 @@ public:
 
 	void CloseThisHandle(OSRHandle& OutHandle) override
 	{
-		if (OutHandle) { CloseHandle(OutHandle); };
+		if (OutHandle)
+		{
+			CloseHandle(OutHandle);
+			OutHandle = nullptr;
+		};
 	}
 
 	void Release() override

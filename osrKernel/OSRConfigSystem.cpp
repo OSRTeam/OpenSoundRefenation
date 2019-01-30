@@ -100,7 +100,6 @@ IsConfigExist(
 {
 	bool bDir = false;
 	WSTRING_PATH szConfigPath = { 0 };
-	WSTRING64 szConfigName = { 0 };
 
 	ConvertToPath(lpConfig, szConfigPath);
 

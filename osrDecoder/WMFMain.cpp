@@ -73,15 +73,15 @@ IMFDecoder::DecodeFile(const char* PathToFileUTF8, void*& pOutFile, size_t& OutS
 		pSourceReader->GetNativeMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, &pMediaType);
 		MFCreateWaveFormatExFromMFMediaType(pMediaType, &pWave, &dwSizeOfWaveFormat);
 
-		CoTaskMemFree(pWave);
-		pWave = nullptr;
-
 		if (pWave->wBitsPerSample == 24 && pWave->wFormatTag == 1) 
 		{
 			_RELEASE(pSourceReader);
 			_RELEASE(pMediaSrc);
 			return;
 		}
+
+		CoTaskMemFree(pWave);
+		pWave = nullptr;
 
 		GUID MajorType = { NULL };
 		GUID SubType = { NULL };

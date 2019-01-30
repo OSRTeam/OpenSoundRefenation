@@ -47,6 +47,10 @@ AsyncMixerThreadProc(LPVOID pData)
 		goto clean;
 	}
 
+	// set start event for mixer
+	SetEvent(pMixer->hStartThread);
+	ResetEvent(pMixer->hReleaseThread);
+
 	// wait for any event
 	while (((dwWait = WaitForMultipleObjects(3, hArray, FALSE, INFINITE)) != WAIT_FAILED) && isPlay)
 	{
@@ -60,6 +64,8 @@ AsyncMixerThreadProc(LPVOID pData)
 			break;
 		case WAIT_OBJECT_0 + 2:
 		{
+			WaitForSingleObject(pMixer->hWaitThread, INFINITE);
+
 			for (TRACK_INFO track : pMixer->tracksInfo)
 			{
 				if (track.pData)
@@ -109,7 +115,11 @@ AsyncMixerThreadProc(LPVOID pData)
 				isFirst = false;
 			}
 
+			ISoundInterfaceWASAPI* pI = (ISoundInterfaceWASAPI*)pMixer->pSound;
+			WaitForSingleObject(pI->hOutputStart, INFINITE);
+
 			pMixer->pSound->RecvPacket(pOutBuffer, SoundData, pMixer->tracksInfo[0].BufferSize);
+			ResetEvent(pMixer->hWaitThread);
 		}
 		break;
 		}
@@ -409,10 +419,6 @@ IMixerAsync::play()
 {
 	if (thread.CreateUserThread(nullptr, (ThreadFunc*)AsyncMixerThreadProc, this, L"OSR Async mixer worker"))
 	{
-		// set start event for mixer
-		SetEvent(hStartThread);
-		ResetEvent(hReleaseThread);
-
 		return OSR_SUCCESS;
 	}
 
