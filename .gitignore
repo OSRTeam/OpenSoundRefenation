@@ -24,7 +24,6 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe
@@ -185,3 +184,13 @@ x64/Debug/vc141.pdb
 /osrMixer/x64/Release
 /osrPlugins/x64
 /release
+*.pdb
+libs/avcodec-58.def
+libs/avdevice-58.def
+libs/avfilter-7.def
+libs/avformat-58.def
+libs/avutil-56.def
+libs/libsndfile-1.def
+libs/postproc-55.def
+libs/swresample-3.def
+libs/swscale-5.def

@@ -303,7 +303,7 @@ public:
 	virtual void ReadSize(OSRHandle& Handle, size_t& SizeToRead, void*& pOutFile) = 0;
 	virtual void Write(OSRHandle& Handle, u8*& pOutStream, size_t& OutSize) = 0;
 
-	virtual void ListFolderFiles(const char* FolderPath, const char* FileType, STRING512* OutFiles, size_t CountFiles) = 0;
+	virtual void ListFolderFiles(const char* FolderPath, const char* FileType, STRING512* OutFiles, size_t& CountFiles) = 0;
 	virtual void GetPathUTF8(OSRHandle& OutHandle, const char*& OutString, size_t& OutStringSize) = 0;
 	virtual FILE_TYPE IsAudio(const char* PathToFile) = 0;
 
@@ -523,12 +523,12 @@ public:
 		}
 	}
 
-	void ListFolderFiles(const char* FolderPath, const char* FileType, STRING512* OutFiles, size_t CountFiles) override
+	void ListFolderFiles(const char* FolderPath, const char* FileType, STRING512* OutFiles, size_t& CountFiles) override
 	{
 		WSTRING_PATH szPath = { 0 };
 		STRING512 PathTemp = { 0 };
 		WSTRING64 szType = { 0 };
-		size_t cb = CountFiles;
+		size_t& cb = CountFiles;
 		size_t u = 0;
 
 		if (FileType)
@@ -572,6 +572,8 @@ public:
 
 					Cycle++;
 				}
+
+				CountFiles = Cycle;
 			}
 		}
 	}
